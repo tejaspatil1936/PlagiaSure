@@ -1,5 +1,5 @@
-import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 
 export const extractTextFromFile = async (buffer, mimeType) => {
   try {
@@ -25,10 +25,32 @@ export const extractTextFromFile = async (buffer, mimeType) => {
 
 const extractFromPDF = async (buffer) => {
   try {
-    const data = await pdfParse(buffer);
-    return data.text;
+    // Load PDF document
+    const loadingTask = pdfjsLib.getDocument({
+      data: new Uint8Array(buffer),
+      verbosity: 0 // Suppress console output
+    });
+    
+    const pdf = await loadingTask.promise;
+    let fullText = '';
+
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      
+      const pageText = textContent.items
+        .map(item => item.str)
+        .join(' ');
+      
+      fullText += pageText + '\n';
+    }
+
+    return fullText.trim();
   } catch (error) {
-    throw new Error(`PDF extraction failed: ${error.message}`);
+    console.error('PDF extraction error:', error);
+    // Fallback: return empty string instead of throwing
+    return '';
   }
 };
 
