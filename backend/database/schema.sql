@@ -163,22 +163,22 @@ CREATE POLICY "Users can update own reports" ON reports
 -- Run these in the Supabase dashboard under Storage > Policies
 
 -- Allow authenticated users to upload files to their own folder
--- CREATE POLICY "Users can upload to own folder" ON storage.objects
---     FOR INSERT WITH CHECK (
---         bucket_id = 'Data' AND 
---         auth.uid()::text = (storage.foldername(name))[1]
---     );
+ CREATE POLICY "Users can upload to own folder" ON storage.objects
+     FOR INSERT WITH CHECK (
+        bucket_id = 'Data' AND 
+        auth.uid()::text = (storage.foldername(name))[1]
+    );
 
 -- Allow users to view their own files
--- CREATE POLICY "Users can view own files" ON storage.objects
---     FOR SELECT USING (
---         bucket_id = 'Data' AND 
---         auth.uid()::text = (storage.foldername(name))[1]
---     );
+CREATE POLICY "Users can view own files" ON storage.objects
+     FOR SELECT USING (
+         bucket_id = 'Data' AND 
+        auth.uid()::text = (storage.foldername(name))[1]
+    );
 
 -- Allow users to delete their own files
--- CREATE POLICY "Users can delete own files" ON storage.objects
---     FOR DELETE USING (
---         bucket_id = 'Data' AND 
---         auth.uid()::text = (storage.foldername(name))[1]
---     );
+ CREATE POLICY "Users can delete own files" ON storage.objects
+    FOR DELETE USING (
+        bucket_id = 'Data' AND 
+        auth.uid()::text = (storage.foldername(name))[1]
+    );
