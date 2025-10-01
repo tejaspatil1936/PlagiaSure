@@ -9,28 +9,40 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
     school_name VARCHAR(255),
-    role VARCHAR(50) DEFAULT 'teacher',
-    stripe_customer_id VARCHAR(255),
+    role VARCHAR(50) DEFAULT 'teacher', -- 'teacher', 'admin', 'student'
+    is_admin BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Subscriptions table
+-- Subscriptions table (Manual approval system)
 CREATE TABLE IF NOT EXISTS subscriptions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    stripe_subscription_id VARCHAR(255) UNIQUE,
-    stripe_customer_id VARCHAR(255),
     plan_type VARCHAR(50) NOT NULL, -- 'basic', 'pro', 'enterprise'
-    status VARCHAR(50) NOT NULL, -- 'active', 'canceled', 'past_due', 'incomplete'
+    status VARCHAR(50) NOT NULL, -- 'pending', 'active', 'rejected', 'cancelled', 'expired'
     current_period_start TIMESTAMP WITH TIME ZONE,
     current_period_end TIMESTAMP WITH TIME ZONE,
     checks_used INTEGER DEFAULT 0,
     checks_limit INTEGER DEFAULT 100, -- -1 for unlimited
-    last_payment_at TIMESTAMP WITH TIME ZONE,
-    last_payment_failed_at TIMESTAMP WITH TIME ZONE,
     last_used_at TIMESTAMP WITH TIME ZONE,
-    canceled_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Request fields
+    request_message TEXT,
+    requested_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Approval fields
+    approved_at TIMESTAMP WITH TIME ZONE,
+    approved_by UUID REFERENCES users(id),
+    
+    -- Rejection fields
+    rejected_at TIMESTAMP WITH TIME ZONE,
+    rejected_by UUID REFERENCES users(id),
+    rejection_reason TEXT,
+    
+    -- Cancellation fields
+    cancelled_at TIMESTAMP WITH TIME ZONE,
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

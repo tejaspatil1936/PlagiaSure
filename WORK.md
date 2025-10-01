@@ -130,28 +130,57 @@ FRONTEND_URL=http://localhost:5173
 - `POST /cancel` - Cancel subscription
 - `POST /webhook` - Stripe webhook handler
 
+### ✅ Updated Implementation (Current Session)
+
+#### 1. Replaced OpenAI with Gemini AI
+- **Date**: Current session
+- **Description**: Switched from OpenAI to Google Gemini for AI content detection
+- **Changes**:
+  - Updated `backend/services/aiDetection.js` to use `@google/generative-ai`
+  - Added fallback mock detection for demo purposes
+  - Removed OpenAI dependency from package.json
+  - Updated environment variables to use `GEMINI_API_KEY`
+
+#### 2. Replaced Stripe with Manual Admin Approval
+- **Date**: Current session
+- **Description**: Implemented manual subscription approval system instead of automated payments
+- **Changes**:
+  - Updated `backend/routes/billing.js` with manual approval workflow
+  - Added admin routes for approving/rejecting subscription requests
+  - Updated database schema to support approval workflow
+  - Added admin role checking middleware
+  - Removed all Stripe dependencies
+
+#### 3. Enhanced Database Schema
+- **Date**: Current session
+- **Description**: Updated database schema for manual approval system
+- **Changes**:
+  - Added admin role support to users table
+  - Updated subscriptions table with approval/rejection fields
+  - Added proper indexing and RLS policies
+  - Removed Stripe-specific fields
+
 ### 🚀 Next Steps Required
 
 #### 1. Database Setup
-- Run `backend/database/schema.sql` in Supabase SQL editor
+- Run updated `backend/database/schema.sql` in Supabase SQL editor
 - Configure storage policies for "Data" bucket
-- Test database connections
+- Create first admin user manually in database
 
 #### 2. API Keys Configuration
-- Set up OpenAI API key for AI detection
-- Configure Hugging Face API key for AI probability
-- Set up Copyleaks account and API credentials
-- Configure Stripe keys for billing
+- Set up Gemini API key for AI detection: `GEMINI_API_KEY`
+- Configure Hugging Face API key (optional): `HUGGINGFACE_API_KEY`
+- Set up Copyleaks account (optional for demo): `COPYLEAKS_API_KEY`
 
 #### 3. Testing & Deployment
-- Install dependencies: `npm install`
-- Test local development: `npm run dev`
+- ✅ Dependencies installed and server running
+- Test API endpoints with Postman or similar
 - Deploy to Render or similar platform
 - Configure production environment variables
 
 #### 4. Frontend Integration
-- Update frontend to use backend API endpoints
-- Implement authentication flow
+- Update frontend to use new billing system (manual requests)
+- Implement admin dashboard for subscription management
 - Add file upload functionality
 - Create report viewing interface
 

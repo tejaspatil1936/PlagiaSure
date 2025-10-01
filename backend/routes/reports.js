@@ -1,13 +1,13 @@
 import express from 'express';
 import { supabase } from '../server.js';
-import { authenticateUser } from '../middleware/auth.js';
+import { authenticateUser, checkSubscription, incrementUsage } from '../middleware/auth.js';
 import { detectAIContent } from '../services/aiDetection.js';
 import { detectPlagiarism } from '../services/plagiarismDetection.js';
 
 const router = express.Router();
 
 // Generate report endpoint
-router.post('/generate', authenticateUser, async (req, res) => {
+router.post('/generate', authenticateUser, checkSubscription, async (req, res) => {
   try {
     const { assignmentId } = req.body;
     const userId = req.user.id;
@@ -79,6 +79,9 @@ router.post('/generate', authenticateUser, async (req, res) => {
       }
       reportId = newReport.id;
     }
+
+    // Increment usage count
+    await incrementUsage(userId);
 
     // Process analysis asynchronously
     processAnalysis(reportId, assignment.extracted_text);

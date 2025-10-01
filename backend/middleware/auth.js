@@ -82,6 +82,37 @@ export const checkSubscription = async (req, res, next) => {
   }
 };
 
+export const checkAdminRole = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user profile to check admin status
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('is_admin, role')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Admin check error:', error);
+      return res.status(500).json({ error: 'Failed to verify admin status' });
+    }
+
+    if (!user || (!user.is_admin && user.role !== 'admin')) {
+      return res.status(403).json({ 
+        error: 'Admin access required',
+        code: 'INSUFFICIENT_PERMISSIONS'
+      });
+    }
+
+    next();
+
+  } catch (error) {
+    console.error('Admin check error:', error);
+    res.status(500).json({ error: 'Admin verification failed' });
+  }
+};
+
 export const incrementUsage = async (userId) => {
   try {
     // Increment checks_used for the user's active subscription
