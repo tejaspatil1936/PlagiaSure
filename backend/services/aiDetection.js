@@ -1,10 +1,23 @@
-import OpenAI from 'openai';
 import axios from 'axios';
 import { splitIntoSentences } from '../utils/textExtractor.js';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openai = null;
+
+// Initialize OpenAI client only when needed and API key is available
+const getOpenAIClient = async () => {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    try {
+      const { default: OpenAI } = await import('openai');
+      openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+    } catch (error) {
+      console.error('Failed to initialize OpenAI client:', error);
+      return null;
+    }
+  }
+  return openai;
+};
 
 export const detectAIContent = async (text) => {
   try {
@@ -49,7 +62,7 @@ export const detectAIContent = async (text) => {
 // Get overall AI probability using Hugging Face model
 const getOverallAIProbability = async (text) => {
   try {
-    if (!process.env.HUGGINGFACE_API_KEY) {
+    if (!process.env.HUGGINGFACE_API_KEY || process.env.HUGGINGFACE_API_KEY === 'your_huggingface_api_key_here') {
       console.warn('Hugging Face API key not configured, using fallback');
       return await getOpenAIFallbackProbability(text);
     }
@@ -87,12 +100,13 @@ const getOverallAIProbability = async (text) => {
 // Fallback AI probability detection using OpenAI
 const getOpenAIFallbackProbability = async (text) => {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    const client = await getOpenAIClient();
+    if (!client) {
       console.warn('OpenAI API key not configured, returning default probability');
       return 0.1; // Default low probability
     }
 
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         {
@@ -122,7 +136,8 @@ const getOpenAIFallbackProbability = async (text) => {
 // Get sentence-level AI highlights using OpenAI
 const getSentenceAIHighlights = async (text) => {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    const client = await getOpenAIClient();
+    if (!client) {
       console.warn('OpenAI API key not configured for sentence highlighting');
       const sentences = splitIntoSentences(text);
       return sentences.map(sentence => ({ text: sentence, ai: false }));
@@ -137,7 +152,7 @@ const getSentenceAIHighlights = async (text) => {
       const batch = sentences.slice(i, i + batchSize);
       
       try {
-        const response = await openai.chat.completions.create({
+        const response = await client.chat.completions.create({
           model: 'gpt-3.5-turbo',
           messages: [
             {
