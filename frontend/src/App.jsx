@@ -7,8 +7,8 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Assignments from './pages/Assignments';
-// import Reports from './pages/Reports';
-// import Subscription from './pages/Subscription';
+import Reports from './pages/Reports';
+import Subscription from './pages/Subscription';
 // import Admin from './pages/Admin';
 import './App.css';
 
@@ -77,7 +77,14 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             } />
-            {/* <Route path="/reports" element={
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Reports />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/reports/:id" element={
               <ProtectedRoute>
                 <Layout>
                   <Reports />
@@ -91,7 +98,7 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/admin" element={
+            {/* <Route path="/admin" element={
               <ProtectedRoute>
                 <Layout>
                   <Admin />
