@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { assignmentsAPI } from '../services/api';
-import { 
-  Upload, 
-  FileText, 
-  Trash2, 
-  Eye, 
+import React, { useState, useEffect } from "react";
+import { assignmentsAPI } from "../services/api";
+import {
+  Upload,
+  FileText,
+  Trash2,
+  Eye,
   Clock,
   CheckCircle,
   AlertCircle,
-  Plus
-} from 'lucide-react';
-import { formatDate, formatFileSize, cn } from '../lib/utils';
+  Plus,
+} from "lucide-react";
+import { formatDate, formatFileSize, cn } from "../lib/utils";
 
 const Assignments = () => {
   const [assignments, setAssignments] = useState([]);
@@ -18,12 +18,12 @@ const Assignments = () => {
   const [uploading, setUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadForm, setUploadForm] = useState({
-    studentName: '',
-    courseName: '',
-    assignmentTitle: '',
-    file: null
+    studentName: "",
+    courseName: "",
+    assignmentTitle: "",
+    file: null,
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     loadAssignments();
@@ -34,8 +34,8 @@ const Assignments = () => {
       const response = await assignmentsAPI.getAll();
       setAssignments(response.data.assignments);
     } catch (error) {
-      console.error('Failed to load assignments:', error);
-      setError('Failed to load assignments');
+      console.error("Failed to load assignments:", error);
+      setError("Failed to load assignments");
     } finally {
       setLoading(false);
     }
@@ -46,84 +46,86 @@ const Assignments = () => {
     if (file) {
       // Validate file type
       const allowedTypes = [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword',
-        'text/plain'
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword",
+        "text/plain",
       ];
-      
+
       if (!allowedTypes.includes(file.type)) {
-        setError('Please select a PDF, DOCX, DOC, or TXT file');
+        setError("Please select a PDF, DOCX, DOC, or TXT file");
         return;
       }
 
       // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
-        setError('File size must be less than 10MB');
+        setError("File size must be less than 10MB");
         return;
       }
 
       setUploadForm({ ...uploadForm, file });
-      setError('');
+      setError("");
     }
   };
 
   const handleUpload = async (e) => {
     e.preventDefault();
     setUploading(true);
-    setError('');
+    setError("");
 
     try {
       const formData = new FormData();
-      formData.append('assignment', uploadForm.file);
-      formData.append('studentName', uploadForm.studentName);
-      formData.append('courseName', uploadForm.courseName);
-      formData.append('assignmentTitle', uploadForm.assignmentTitle);
+      formData.append("assignment", uploadForm.file);
+      formData.append("studentName", uploadForm.studentName);
+      formData.append("courseName", uploadForm.courseName);
+      formData.append("assignmentTitle", uploadForm.assignmentTitle);
 
       await assignmentsAPI.upload(formData);
-      
+
       // Reset form and close modal
       setUploadForm({
-        studentName: '',
-        courseName: '',
-        assignmentTitle: '',
-        file: null
+        studentName: "",
+        courseName: "",
+        assignmentTitle: "",
+        file: null,
       });
       setShowUploadModal(false);
-      
+
       // Reload assignments
       loadAssignments();
     } catch (error) {
-      console.error('Upload failed:', error);
-      setError(error.response?.data?.error || 'Upload failed');
+      console.error("Upload failed:", error);
+      setError(error.response?.data?.error || "Upload failed");
     } finally {
       setUploading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this assignment?')) {
+    if (!confirm("Are you sure you want to delete this assignment?")) {
       return;
     }
 
     try {
       await assignmentsAPI.delete(id);
-      setAssignments(assignments.filter(a => a.id !== id));
+      setAssignments(assignments.filter((a) => a.id !== id));
     } catch (error) {
-      console.error('Delete failed:', error);
-      setError('Failed to delete assignment');
+      console.error("Delete failed:", error);
+      setError("Failed to delete assignment");
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'uploaded':
+      case "uploaded":
         return <Clock className="h-5 w-5 text-yellow-500" />;
-      case 'processing':
-        return <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>;
-      case 'completed':
+      case "processing":
+        return (
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+        );
+      case "completed":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'failed':
+      case "failed":
         return <AlertCircle className="h-5 w-5 text-red-500" />;
       default:
         return <Clock className="h-5 w-5 text-gray-500" />;
@@ -132,16 +134,16 @@ const Assignments = () => {
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'uploaded':
-        return 'Uploaded';
-      case 'processing':
-        return 'Processing';
-      case 'completed':
-        return 'Completed';
-      case 'failed':
-        return 'Failed';
+      case "uploaded":
+        return "Uploaded";
+      case "processing":
+        return "Processing";
+      case "completed":
+        return "Completed";
+      case "failed":
+        return "Failed";
       default:
-        return 'Unknown';
+        return "Unknown";
     }
   };
 
@@ -182,7 +184,9 @@ const Assignments = () => {
       {assignments.length === 0 ? (
         <div className="text-center py-12">
           <FileText className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No assignments</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            No assignments
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
             Get started by uploading your first assignment.
           </p>
@@ -211,7 +215,8 @@ const Assignments = () => {
                             {assignment.assignment_title}
                           </p>
                           <p className="text-sm text-gray-500">
-                            Student: {assignment.student_name} • Course: {assignment.course_name}
+                            Student: {assignment.student_name} • Course:{" "}
+                            {assignment.course_name}
                           </p>
                           <div className="mt-1 flex items-center text-sm text-gray-500">
                             <span>{assignment.file_name}</span>
@@ -231,14 +236,17 @@ const Assignments = () => {
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {assignment.reports && assignment.reports.length > 0 && (
-                          <button
-                            onClick={() => window.location.href = `/reports/${assignment.reports[0].id}`}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                        )}
+                        {assignment.reports &&
+                          assignment.reports.length > 0 && (
+                            <button
+                              onClick={() =>
+                                (window.location.href = `/reports/${assignment.reports[0].id}`)
+                              }
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          )}
                         <button
                           onClick={() => handleDelete(assignment.id)}
                           className="text-red-600 hover:text-red-900"
@@ -272,12 +280,17 @@ const Assignments = () => {
                     type="text"
                     required
                     value={uploadForm.studentName}
-                    onChange={(e) => setUploadForm({ ...uploadForm, studentName: e.target.value })}
+                    onChange={(e) =>
+                      setUploadForm({
+                        ...uploadForm,
+                        studentName: e.target.value,
+                      })
+                    }
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     placeholder="Enter student name"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Course Name
@@ -286,12 +299,17 @@ const Assignments = () => {
                     type="text"
                     required
                     value={uploadForm.courseName}
-                    onChange={(e) => setUploadForm({ ...uploadForm, courseName: e.target.value })}
+                    onChange={(e) =>
+                      setUploadForm({
+                        ...uploadForm,
+                        courseName: e.target.value,
+                      })
+                    }
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     placeholder="Enter course name"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Assignment Title
@@ -300,12 +318,17 @@ const Assignments = () => {
                     type="text"
                     required
                     value={uploadForm.assignmentTitle}
-                    onChange={(e) => setUploadForm({ ...uploadForm, assignmentTitle: e.target.value })}
+                    onChange={(e) =>
+                      setUploadForm({
+                        ...uploadForm,
+                        assignmentTitle: e.target.value,
+                      })
+                    }
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     placeholder="Enter assignment title"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     File
@@ -335,7 +358,7 @@ const Assignments = () => {
                     disabled={uploading}
                     className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md disabled:opacity-50"
                   >
-                    {uploading ? 'Uploading...' : 'Upload'}
+                    {uploading ? "Uploading..." : "Upload"}
                   </button>
                 </div>
               </form>
