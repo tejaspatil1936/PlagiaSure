@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { detectPlagiarismFree } from './freePlagiarismDetection.js';
 import detectPlagiarismTrulyFree from './trulyFreePlagiarism.js';
 
 export const detectPlagiarism = async (text) => {
@@ -10,14 +9,6 @@ export const detectPlagiarism = async (text) => {
     
     if (trulyFreeResult && trulyFreeResult.score > 0) {
       return trulyFreeResult;
-    }
-
-    // Fallback to pattern-based free detection
-    console.log('Falling back to pattern-based detection...');
-    const freeResult = await detectPlagiarismFree(text);
-    
-    if (freeResult && freeResult.score > 0) {
-      return freeResult;
     }
 
     // Final fallback to enhanced mock detection
