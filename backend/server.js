@@ -53,6 +53,34 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Database check endpoint
+app.get('/db-check', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('count')
+      .limit(1);
+    
+    if (error) {
+      return res.status(500).json({ 
+        status: 'Database Error', 
+        error: error.message,
+        hint: 'Please run the database setup script in Supabase'
+      });
+    }
+    
+    res.json({ 
+      status: 'Database OK', 
+      message: 'Database tables are accessible'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'Database Connection Error', 
+      error: error.message 
+    });
+  }
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/assignments', assignmentRoutes);

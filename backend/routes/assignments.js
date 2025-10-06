@@ -62,13 +62,18 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
       return res.status(500).json({ error: 'Failed to upload file' });
     }
 
-    // Extract text from file
+    // Extract text from file (simplified for now)
     let extractedText = '';
     try {
-      extractedText = await extractTextFromFile(file.buffer, file.mimetype);
+      if (file.mimetype === 'text/plain') {
+        extractedText = file.buffer.toString('utf-8');
+      } else {
+        // For PDF/DOCX, we'll add a placeholder for now
+        extractedText = `[${file.mimetype} file - text extraction pending]`;
+      }
     } catch (textError) {
       console.error('Text extraction error:', textError);
-      // Continue without text extraction - can be processed later
+      extractedText = '[Text extraction failed]';
     }
 
     // Save assignment metadata to database
@@ -109,7 +114,11 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
 
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
