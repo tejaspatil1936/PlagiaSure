@@ -53,6 +53,37 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Setup instructions endpoint
+app.get('/setup', (req, res) => {
+  res.send(`
+    <html>
+      <head><title>PlagiaSure Setup</title></head>
+      <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+        <h1>🚀 PlagiaSure Database Setup Required</h1>
+        <p>To complete the setup, please follow these steps:</p>
+        <ol>
+          <li><strong>Go to your Supabase Dashboard</strong><br>
+              Visit <a href="https://supabase.com/dashboard" target="_blank">https://supabase.com/dashboard</a></li>
+          <li><strong>Navigate to SQL Editor</strong><br>
+              Click on "SQL Editor" in the left sidebar</li>
+          <li><strong>Copy the Setup Script</strong><br>
+              Copy the content from <code>backend/scripts/setup-database.sql</code></li>
+          <li><strong>Execute the Script</strong><br>
+              Paste and run the script in the SQL Editor</li>
+          <li><strong>Verify Setup</strong><br>
+              Visit <a href="/db-check" target="_blank">/db-check</a> to verify the setup</li>
+        </ol>
+        <h2>Quick Links:</h2>
+        <ul>
+          <li><a href="/health">Health Check</a></li>
+          <li><a href="/db-check">Database Check</a></li>
+        </ul>
+        <p><em>Once setup is complete, you can use the frontend application!</em></p>
+      </body>
+    </html>
+  `);
+});
+
 // Database check endpoint
 app.get('/db-check', async (req, res) => {
   try {
@@ -61,11 +92,25 @@ app.get('/db-check', async (req, res) => {
       .select('count')
       .limit(1);
     
+    if (error && error.code === '42P01') {
+      return res.status(500).json({ 
+        status: 'Database Setup Required', 
+        error: 'Database tables not found',
+        instructions: [
+          '1. Go to your Supabase dashboard',
+          '2. Navigate to SQL Editor',
+          '3. Copy content from backend/scripts/setup-database.sql',
+          '4. Execute the script',
+          '5. Refresh this page'
+        ]
+      });
+    }
+    
     if (error) {
       return res.status(500).json({ 
         status: 'Database Error', 
         error: error.message,
-        hint: 'Please run the database setup script in Supabase'
+        code: error.code
       });
     }
     

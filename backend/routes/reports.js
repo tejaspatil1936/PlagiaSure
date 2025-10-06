@@ -6,8 +6,8 @@ import { detectPlagiarism } from '../services/plagiarismDetection.js';
 
 const router = express.Router();
 
-// Generate report endpoint
-router.post('/generate', authenticateUser, checkSubscription, async (req, res) => {
+// Generate report endpoint (temporarily disabled subscription check)
+router.post('/generate', authenticateUser, async (req, res) => {
   try {
     const { assignmentId } = req.body;
     const userId = req.user.id;
