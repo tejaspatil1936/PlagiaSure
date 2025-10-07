@@ -84,6 +84,45 @@ app.get('/setup', (req, res) => {
   `);
 });
 
+// Storage check endpoint
+app.get('/storage-check', async (req, res) => {
+  try {
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+    
+    if (error) {
+      return res.status(500).json({ 
+        status: 'Storage Error', 
+        error: error.message 
+      });
+    }
+    
+    const dataBucket = buckets.find(bucket => bucket.name === 'Data');
+    
+    if (!dataBucket) {
+      return res.status(500).json({ 
+        status: 'Bucket Missing', 
+        error: 'Data bucket not found',
+        instructions: [
+          '1. Go to Supabase Dashboard → Storage',
+          '2. Create a bucket named "Data"',
+          '3. Run the storage policies script'
+        ]
+      });
+    }
+    
+    res.json({ 
+      status: 'Storage OK', 
+      message: 'Data bucket exists',
+      bucket: dataBucket
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'Storage Connection Error', 
+      error: error.message 
+    });
+  }
+});
+
 // Database check endpoint
 app.get('/db-check', async (req, res) => {
   try {
