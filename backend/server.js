@@ -55,6 +55,44 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Debug storage upload
+app.post("/api/debug-upload", async (req, res) => {
+  try {
+    const testContent = "This is a test file";
+    const fileName = `test-${Date.now()}.txt`;
+    
+    console.log("Attempting to upload test file:", fileName);
+    
+    const { data, error } = await supabase.storage
+      .from("Data")
+      .upload(fileName, testContent, {
+        contentType: "text/plain"
+      });
+    
+    if (error) {
+      console.error("Debug upload error:", error);
+      return res.status(500).json({
+        status: "Upload Failed",
+        error: error.message,
+        details: error
+      });
+    }
+    
+    res.json({
+      status: "Upload Success",
+      message: "Test file uploaded successfully",
+      data: data
+    });
+    
+  } catch (error) {
+    console.error("Debug upload error:", error);
+    res.status(500).json({
+      status: "Upload Error",
+      error: error.message
+    });
+  }
+});
+
 // Setup instructions endpoint
 app.get("/setup", (req, res) => {
   res.send(`
@@ -91,7 +129,7 @@ app.post("/create-bucket", async (req, res) => {
   try {
     console.log("Creating Data bucket...");
 
-    const { data, error } = await supabase.storage.createBucket("Data", {
+    const { data, error } = await supabase.storage.createBucket("Data2", {
       public: false,
       allowedMimeTypes: [
         "application/pdf",
