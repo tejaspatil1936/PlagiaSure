@@ -1,15 +1,15 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import dotenv from "dotenv";
+import { createClient } from "@supabase/supabase-js";
 
 // Import routes
-import authRoutes from './routes/auth.js';
-import assignmentRoutes from './routes/assignments.js';
-import reportRoutes from './routes/reports.js';
-import billingRoutes from './routes/billing.js';
+import authRoutes from "./routes/auth.js";
+import assignmentRoutes from "./routes/assignments.js";
+import reportRoutes from "./routes/reports.js";
+import billingRoutes from "./routes/billing.js";
 
 // Load environment variables
 dotenv.config();
@@ -30,31 +30,33 @@ app.use(helmet());
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  message: "Too many requests from this IP, please try again later.",
 });
 app.use(limiter);
 
 // CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 // Body parsing middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+app.get("/health", (req, res) => {
+  res.json({
+    status: "OK",
     timestamp: new Date().toISOString(),
-    service: 'Plagiarism AI Checker Backend'
+    service: "Plagiarism AI Checker Backend",
   });
 });
 
 // Setup instructions endpoint
-app.get('/setup', (req, res) => {
+app.get("/setup", (req, res) => {
   res.send(`
     <html>
       <head><title>PlagiaSure Setup</title></head>
@@ -84,105 +86,144 @@ app.get('/setup', (req, res) => {
   `);
 });
 
-// Storage check endpoint
-app.get('/storage-check', async (req, res) => {
+// Create storage bucket endpoint
+app.post("/create-bucket", async (req, res) => {
   try {
-    const { data: buckets, error } = await supabase.storage.listBuckets();
-    
+    console.log("Creating Data bucket...");
+
+    const { data, error } = await supabase.storage.createBucket("Data", {
+      public: false,
+      allowedMimeTypes: [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword",
+        "text/plain",
+      ],
+      fileSizeLimit: 10485760, // 10MB
+    });
+
     if (error) {
-      return res.status(500).json({ 
-        status: 'Storage Error', 
-        error: error.message 
+      console.error("Bucket creation error:", error);
+      return res.status(500).json({
+        status: "Bucket Creation Failed",
+        error: error.message,
+        note: "Bucket might already exist or you need service_role key",
       });
     }
-    
-    const dataBucket = buckets.find(bucket => bucket.name === 'Data');
-    
-    if (!dataBucket) {
-      return res.status(500).json({ 
-        status: 'Bucket Missing', 
-        error: 'Data bucket not found',
-        instructions: [
-          '1. Go to Supabase Dashboard → Storage',
-          '2. Create a bucket named "Data"',
-          '3. Run the storage policies script'
-        ]
-      });
-    }
-    
-    res.json({ 
-      status: 'Storage OK', 
-      message: 'Data bucket exists',
-      bucket: dataBucket
+
+    res.json({
+      status: "Bucket Created",
+      message: "Data bucket created successfully",
+      data: data,
     });
   } catch (error) {
-    res.status(500).json({ 
-      status: 'Storage Connection Error', 
-      error: error.message 
+    console.error("Bucket creation error:", error);
+    res.status(500).json({
+      status: "Bucket Creation Error",
+      error: error.message,
+    });
+  }
+});
+
+// Storage check endpoint
+app.get("/storage-check", async (req, res) => {
+  try {
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+
+    if (error) {
+      return res.status(500).json({
+        status: "Storage Error",
+        error: error.message,
+      });
+    }
+
+    const dataBucket = buckets.find((bucket) => bucket.name === "Data");
+
+    if (!dataBucket) {
+      return res.status(500).json({
+        status: "Bucket Missing",
+        error: "Data bucket not found",
+        instructions: [
+          "1. Visit POST /create-bucket to create it automatically",
+          "2. Or go to Supabase Dashboard → Storage and create 'Data' bucket manually",
+          "3. Then run the storage policies script",
+        ],
+      });
+    }
+
+    res.json({
+      status: "Storage OK",
+      message: "Data bucket exists",
+      bucket: dataBucket,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "Storage Connection Error",
+      error: error.message,
     });
   }
 });
 
 // Database check endpoint
-app.get('/db-check', async (req, res) => {
+app.get("/db-check", async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from('users')
-      .select('count')
+      .from("users")
+      .select("count")
       .limit(1);
-    
-    if (error && error.code === '42P01') {
-      return res.status(500).json({ 
-        status: 'Database Setup Required', 
-        error: 'Database tables not found',
+
+    if (error && error.code === "42P01") {
+      return res.status(500).json({
+        status: "Database Setup Required",
+        error: "Database tables not found",
         instructions: [
-          '1. Go to your Supabase dashboard',
-          '2. Navigate to SQL Editor',
-          '3. Copy content from backend/scripts/setup-database.sql',
-          '4. Execute the script',
-          '5. Refresh this page'
-        ]
+          "1. Go to your Supabase dashboard",
+          "2. Navigate to SQL Editor",
+          "3. Copy content from backend/scripts/setup-database.sql",
+          "4. Execute the script",
+          "5. Refresh this page",
+        ],
       });
     }
-    
+
     if (error) {
-      return res.status(500).json({ 
-        status: 'Database Error', 
+      return res.status(500).json({
+        status: "Database Error",
         error: error.message,
-        code: error.code
+        code: error.code,
       });
     }
-    
-    res.json({ 
-      status: 'Database OK', 
-      message: 'Database tables are accessible'
+
+    res.json({
+      status: "Database OK",
+      message: "Database tables are accessible",
     });
   } catch (error) {
-    res.status(500).json({ 
-      status: 'Database Connection Error', 
-      error: error.message 
+    res.status(500).json({
+      status: "Database Connection Error",
+      error: error.message,
     });
   }
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/assignments', assignmentRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/billing', billingRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/assignments", assignmentRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/billing", billingRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error("Error:", err);
   res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    error: err.message || "Internal Server Error",
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });
 });
 
 // 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+app.use("*", (req, res) => {
+  res.status(404).json({ error: "Route not found" });
 });
 
 app.listen(PORT, () => {
