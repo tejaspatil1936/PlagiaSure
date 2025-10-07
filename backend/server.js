@@ -60,35 +60,34 @@ app.post("/api/debug-upload", async (req, res) => {
   try {
     const testContent = "This is a test file";
     const fileName = `test-${Date.now()}.txt`;
-    
+
     console.log("Attempting to upload test file:", fileName);
-    
+
     const { data, error } = await supabase.storage
       .from("Data")
       .upload(fileName, testContent, {
-        contentType: "text/plain"
+        contentType: "text/plain",
       });
-    
+
     if (error) {
       console.error("Debug upload error:", error);
       return res.status(500).json({
         status: "Upload Failed",
         error: error.message,
-        details: error
+        details: error,
       });
     }
-    
+
     res.json({
       status: "Upload Success",
       message: "Test file uploaded successfully",
-      data: data
+      data: data,
     });
-    
   } catch (error) {
     console.error("Debug upload error:", error);
     res.status(500).json({
       status: "Upload Error",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -172,19 +171,24 @@ app.get("/storage-check", async (req, res) => {
       return res.status(500).json({
         status: "Storage Error",
         error: error.message,
+        details: error,
       });
     }
 
-    const dataBucket = buckets.find((bucket) => bucket.name === "Data");
+    console.log("Available buckets:", buckets);
+
+    const bucketName = process.env.SUPABASE_BUCKET_NAME || "Data";
+    const dataBucket = buckets.find((bucket) => bucket.name.toLowerCase() === bucketName.toLowerCase());
 
     if (!dataBucket) {
       return res.status(500).json({
         status: "Bucket Missing",
-        error: "Data bucket not found",
+        error: `${bucketName} bucket not found`,
+        availableBuckets: buckets.map(b => b.name),
         instructions: [
-          "1. Visit POST /create-bucket to create it automatically",
-          "2. Or go to Supabase Dashboard → Storage and create 'Data' bucket manually",
-          "3. Then run the storage policies script",
+          "1. Check if bucket name is exactly 'Data' (case-sensitive)",
+          "2. Verify bucket exists in Supabase Dashboard → Storage",
+          "3. Try refreshing the page and check again",
         ],
       });
     }
@@ -193,6 +197,7 @@ app.get("/storage-check", async (req, res) => {
       status: "Storage OK",
       message: "Data bucket exists",
       bucket: dataBucket,
+      allBuckets: buckets.map(b => ({ name: b.name, public: b.public })),
     });
   } catch (error) {
     res.status(500).json({
