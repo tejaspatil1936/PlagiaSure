@@ -155,7 +155,7 @@ router.get('/:id', authenticateUser, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const { data: assignment, error } = await supabase
+    const { data: assignment, error } = await supabaseAdmin
       .from('assignments')
       .select(`
         *,
@@ -183,7 +183,7 @@ router.get('/', authenticateUser, async (req, res) => {
     const userId = req.user.id;
     const { page = 1, limit = 10, status, course } = req.query;
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('assignments')
       .select(`
         *,
@@ -226,7 +226,7 @@ router.delete('/:id', authenticateUser, async (req, res) => {
     const userId = req.user.id;
 
     // Get assignment to check ownership and get file path
-    const { data: assignment, error: fetchError } = await supabase
+    const { data: assignment, error: fetchError } = await supabaseAdmin
       .from('assignments')
       .select('file_path')
       .eq('id', id)
@@ -247,7 +247,7 @@ router.delete('/:id', authenticateUser, async (req, res) => {
     }
 
     // Delete assignment from database (reports will be deleted via cascade)
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('assignments')
       .delete()
       .eq('id', id)

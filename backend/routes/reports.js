@@ -1,5 +1,5 @@
 import express from 'express';
-import { supabase } from '../server.js';
+import { supabase, supabaseAdmin } from '../server.js';
 import { authenticateUser, checkSubscription, incrementUsage } from '../middleware/auth.js';
 import { detectAIContent } from '../services/aiDetection.js';
 import { detectPlagiarism } from '../services/plagiarismDetection.js';
