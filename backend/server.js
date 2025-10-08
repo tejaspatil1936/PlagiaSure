@@ -61,6 +61,45 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Test file upload without authentication
+app.post("/api/test-file-upload", async (req, res) => {
+  try {
+    const testContent = "This is a test assignment file";
+    const fileName = `test-assignment-${Date.now()}.txt`;
+    
+    console.log("Testing file upload:", fileName);
+    
+    const { data, error } = await supabaseAdmin.storage
+      .from("Data")
+      .upload(fileName, testContent, {
+        contentType: "text/plain",
+      });
+    
+    if (error) {
+      console.error("Test upload error:", error);
+      return res.status(500).json({
+        status: "Upload Failed",
+        error: error.message,
+        details: error,
+      });
+    }
+    
+    res.json({
+      status: "Upload Success",
+      message: "Test assignment file uploaded successfully",
+      fileName: fileName,
+      data: data,
+    });
+    
+  } catch (error) {
+    console.error("Test upload error:", error);
+    res.status(500).json({
+      status: "Upload Error",
+      error: error.message,
+    });
+  }
+});
+
 // Debug storage upload
 app.post("/api/debug-upload", async (req, res) => {
   try {
