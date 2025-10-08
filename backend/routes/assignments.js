@@ -35,16 +35,16 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
     const file = req.file;
     const userId = req.user.id;
 
-    // Ensure user exists in users table
-    const { data: existingUser, error: userCheckError } = await supabase
+    // Ensure user exists in users table (using admin client to bypass RLS)
+    const { data: existingUser, error: userCheckError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('id', userId)
       .single();
 
     if (userCheckError && userCheckError.code === 'PGRST116') {
-      // User doesn't exist, create them
-      const { error: createUserError } = await supabase
+      // User doesn't exist, create them using admin client
+      const { error: createUserError } = await supabaseAdmin
         .from('users')
         .insert([
           {
@@ -103,8 +103,8 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
       extractedText = '[Text extraction failed]';
     }
 
-    // Save assignment metadata to database
-    const { data: assignmentData, error: dbError } = await supabase
+    // Save assignment metadata to database (using admin client to bypass RLS)
+    const { data: assignmentData, error: dbError } = await supabaseAdmin
       .from('assignments')
       .insert([
         {
