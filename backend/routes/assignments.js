@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { supabase } from '../server.js';
+import { supabase, supabaseAdmin } from '../server.js';
 import { extractTextFromFile } from '../utils/textExtractor.js';
 import { authenticateUser } from '../middleware/auth.js';
 
@@ -49,8 +49,8 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
     const timestamp = Date.now();
     const fileName = `${userId}/${timestamp}_${file.originalname}`;
 
-    // Upload file to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Upload file to Supabase Storage (using admin client)
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from(process.env.SUPABASE_BUCKET_NAME)
       .upload(fileName, file.buffer, {
         contentType: file.mimetype,

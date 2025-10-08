@@ -17,10 +17,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Initialize Supabase client
+// Initialize Supabase client (for auth and database)
 export const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
+);
+
+// Initialize Supabase admin client (for storage operations)
+export const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 // Security middleware
@@ -63,7 +69,7 @@ app.post("/api/debug-upload", async (req, res) => {
 
     console.log("Attempting to upload test file:", fileName);
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseAdmin.storage
       .from("Data")
       .upload(fileName, testContent, {
         contentType: "text/plain",
@@ -165,7 +171,7 @@ app.post("/create-bucket", async (req, res) => {
 // Storage check endpoint
 app.get("/storage-check", async (req, res) => {
   try {
-    const { data: buckets, error } = await supabase.storage.listBuckets();
+    const { data: buckets, error } = await supabaseAdmin.storage.listBuckets();
 
     if (error) {
       return res.status(500).json({
