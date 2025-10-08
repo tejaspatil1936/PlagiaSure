@@ -35,6 +35,33 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
     const file = req.file;
     const userId = req.user.id;
 
+    // Ensure user exists in users table
+    const { data: existingUser, error: userCheckError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (userCheckError && userCheckError.code === 'PGRST116') {
+      // User doesn't exist, create them
+      const { error: createUserError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: userId,
+            email: req.user.email,
+            role: 'teacher',
+            is_admin: false,
+            created_at: new Date().toISOString()
+          }
+        ]);
+
+      if (createUserError) {
+        console.error('User creation error:', createUserError);
+        return res.status(500).json({ error: 'Failed to create user profile' });
+      }
+    }
+
     if (!file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
