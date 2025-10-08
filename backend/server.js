@@ -61,6 +61,36 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Debug assignments endpoint
+app.get("/api/debug-assignments", async (req, res) => {
+  try {
+    const { data: assignments, error } = await supabaseAdmin
+      .from("assignments")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (error) {
+      return res.status(500).json({
+        status: "Database Error",
+        error: error.message,
+        details: error,
+      });
+    }
+
+    res.json({
+      status: "Success",
+      message: `Found ${assignments.length} assignments`,
+      assignments: assignments,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "Error",
+      error: error.message,
+    });
+  }
+});
+
 // Test file upload without authentication
 app.post("/api/test-file-upload", async (req, res) => {
   try {
