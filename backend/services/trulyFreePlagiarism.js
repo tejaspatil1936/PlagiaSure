@@ -423,14 +423,14 @@ const enhancedMockDetection = async (text) => {
   let maxScore = 0;
 
   const realisticSources = [
-    'https://scholar.google.com/scholar?q=academic+research',
-    'https://www.researchgate.net/publication/123456789',
     'https://en.wikipedia.org/wiki/Academic_writing',
-    'https://www.jstor.org/stable/12345678',
-    'https://link.springer.com/article/10.1007/s12345-023-01234-5',
-    'https://www.sciencedirect.com/science/article/pii/S0123456789012345',
-    'https://arxiv.org/abs/2023.12345',
-    'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1234567/'
+    'https://en.wikipedia.org/wiki/Research_methodology',
+    'https://scholar.google.com/scholar?q=academic+research',
+    'https://www.researchgate.net',
+    'https://www.jstor.org',
+    'https://link.springer.com',
+    'https://www.sciencedirect.com',
+    'https://arxiv.org/list/cs.AI/recent'
   ];
 
   sentences.forEach((sentence, index) => {
@@ -460,11 +460,14 @@ const enhancedMockDetection = async (text) => {
       const finalScore = Math.min(0.88, score);
       maxScore = Math.max(maxScore, finalScore);
       
+      const selectedSource = realisticSources[Math.floor(Math.random() * realisticSources.length)];
+      const sourceTitle = getSourceTitle(selectedSource);
+      
       highlights.push({
         text: trimmed,
-        source: realisticSources[Math.floor(Math.random() * realisticSources.length)],
+        source: selectedSource,
         score: finalScore,
-        title: 'Academic Source Match'
+        title: sourceTitle
       });
     }
   });
@@ -474,6 +477,24 @@ const enhancedMockDetection = async (text) => {
     highlight: highlights.slice(0, 10),
     method: 'Enhanced Mock Detection'
   };
+};
+
+// Helper function to get appropriate titles for sources
+const getSourceTitle = (url) => {
+  if (url.includes('wikipedia.org')) {
+    if (url.includes('Academic_writing')) return 'Wikipedia: Academic Writing';
+    if (url.includes('Research_methodology')) return 'Wikipedia: Research Methodology';
+    return 'Wikipedia Article';
+  }
+  if (url.includes('scholar.google.com')) return 'Google Scholar Search Results';
+  if (url.includes('researchgate.net')) return 'ResearchGate Academic Network';
+  if (url.includes('arxiv.org')) return 'arXiv Scientific Papers';
+  if (url.includes('ncbi.nlm.nih.gov')) return 'PubMed Central Database';
+  if (url.includes('ieeexplore.ieee.org')) return 'IEEE Xplore Digital Library';
+  if (url.includes('link.springer.com')) return 'Springer Academic Publisher';
+  if (url.includes('sciencedirect.com')) return 'ScienceDirect Database';
+  if (url.includes('jstor.org')) return 'JSTOR Academic Database';
+  return 'Academic Source';
 };
 
 export default detectPlagiarismTrulyFree;

@@ -31,18 +31,18 @@ const enhancedMockPlagiarismDetection = async (text) => {
   const highlights = [];
   let maxScore = 0;
 
-  // Realistic academic sources for mock results
+  // Real, working academic sources for demonstration
   const academicSources = [
-    'https://www.jstor.org/stable/12345678',
-    'https://link.springer.com/article/10.1007/s12345-023-01234-5',
-    'https://www.sciencedirect.com/science/article/pii/S0123456789012345',
-    'https://scholar.google.com/scholar?q=academic+research',
-    'https://www.researchgate.net/publication/123456789',
-    'https://arxiv.org/abs/2023.12345',
-    'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1234567/',
-    'https://ieeexplore.ieee.org/document/1234567',
     'https://en.wikipedia.org/wiki/Academic_writing',
-    'https://www.tandfonline.com/doi/full/10.1080/12345678.2023.1234567'
+    'https://en.wikipedia.org/wiki/Research_methodology',
+    'https://en.wikipedia.org/wiki/Plagiarism',
+    'https://scholar.google.com/scholar?q=academic+research+methodology',
+    'https://www.researchgate.net',
+    'https://arxiv.org/list/cs.AI/recent',
+    'https://www.ncbi.nlm.nih.gov/pmc/',
+    'https://ieeexplore.ieee.org',
+    'https://link.springer.com',
+    'https://www.sciencedirect.com'
   ];
 
   // Enhanced detection patterns
@@ -99,11 +99,14 @@ const enhancedMockPlagiarismDetection = async (text) => {
       const finalScore = Math.min(0.92, sentenceScore);
       maxScore = Math.max(maxScore, finalScore);
       
+      const selectedSource = academicSources[Math.floor(Math.random() * academicSources.length)];
+      const sourceTitle = getSourceTitle(selectedSource);
+      
       highlights.push({
         text: trimmedSentence,
-        source: academicSources[Math.floor(Math.random() * academicSources.length)],
+        source: selectedSource,
         score: finalScore,
-        title: 'Academic Source Match',
+        title: sourceTitle,
         matchedPatterns: matchedPatterns.length > 0 ? matchedPatterns : undefined
       });
     }
@@ -128,6 +131,25 @@ const enhancedMockPlagiarismDetection = async (text) => {
     totalSentences: sentences.length,
     flaggedSentences: highlights.length
   };
+};
+
+// Helper function to get appropriate titles for sources
+const getSourceTitle = (url) => {
+  if (url.includes('wikipedia.org')) {
+    if (url.includes('Academic_writing')) return 'Wikipedia: Academic Writing';
+    if (url.includes('Research_methodology')) return 'Wikipedia: Research Methodology';
+    if (url.includes('Plagiarism')) return 'Wikipedia: Plagiarism';
+    return 'Wikipedia Article';
+  }
+  if (url.includes('scholar.google.com')) return 'Google Scholar Search Results';
+  if (url.includes('researchgate.net')) return 'ResearchGate Academic Network';
+  if (url.includes('arxiv.org')) return 'arXiv Scientific Papers';
+  if (url.includes('ncbi.nlm.nih.gov')) return 'PubMed Central Database';
+  if (url.includes('ieeexplore.ieee.org')) return 'IEEE Xplore Digital Library';
+  if (url.includes('link.springer.com')) return 'Springer Academic Publisher';
+  if (url.includes('sciencedirect.com')) return 'ScienceDirect Database';
+  if (url.includes('jstor.org')) return 'JSTOR Academic Database';
+  return 'Academic Source';
 };
 
 // Keep legacy functions for compatibility

@@ -1,4 +1,7 @@
 import mammoth from 'mammoth';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse');
 
 export const extractTextFromFile = async (buffer, mimeType) => {
   try {
@@ -25,13 +28,20 @@ export const extractTextFromFile = async (buffer, mimeType) => {
 
 const extractFromPDF = async (buffer) => {
   try {
-    // For now, return a placeholder message for PDF files
-    // This prevents the server from crashing while we can still handle other file types
-    console.log('PDF text extraction temporarily disabled - file uploaded successfully');
-    return 'PDF content uploaded - text extraction will be implemented with a more stable library';
+    console.log('📄 Extracting text from PDF...');
+    const data = await pdfParse(buffer);
+    const text = cleanText(data.text);
+    
+    if (!text || text.length < 10) {
+      console.warn('⚠️ PDF text extraction returned minimal content');
+      return 'PDF file processed but minimal text content was extracted. This may be a scanned document or image-based PDF.';
+    }
+    
+    console.log(`✅ PDF text extracted successfully: ${text.length} characters`);
+    return text;
   } catch (error) {
-    console.error('PDF extraction error:', error);
-    return '';
+    console.error('❌ PDF extraction error:', error);
+    return 'PDF file uploaded but text extraction failed. This may be a password-protected, corrupted, or image-based PDF.';
   }
 };
 
