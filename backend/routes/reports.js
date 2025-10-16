@@ -9,7 +9,7 @@ const router = express.Router();
 // Generate report endpoint (temporarily disabled subscription check)
 router.post('/generate', authenticateUser, async (req, res) => {
   try {
-    const { assignmentId } = req.body;
+    const { assignmentId, recheck = false } = req.body;
     const userId = req.user.id;
 
     if (!assignmentId) {
@@ -32,14 +32,14 @@ router.post('/generate', authenticateUser, async (req, res) => {
       return res.status(400).json({ error: 'No text content available for analysis' });
     }
 
-    // Check if report already exists
+    // Check if report already exists (skip this check if it's a recheck)
     const { data: existingReport } = await supabase
       .from('reports')
       .select('*')
       .eq('assignment_id', assignmentId)
       .single();
 
-    if (existingReport && existingReport.status === 'completed') {
+    if (existingReport && existingReport.status === 'completed' && !recheck) {
       return res.json({
         message: 'Report already exists',
         report: existingReport
@@ -55,7 +55,8 @@ router.post('/generate', authenticateUser, async (req, res) => {
     };
 
     let reportId;
-    if (existingReport) {
+    if (existingReport && !recheck) {
+      // Update existing report
       const { data: updatedReport, error: updateError } = await supabase
         .from('reports')
         .update(reportData)
@@ -67,7 +68,29 @@ router.post('/generate', authenticateUser, async (req, res) => {
         throw updateError;
       }
       reportId = updatedReport.id;
+    } else if (existingReport && recheck) {
+      // For recheck, create a new report and delete the old one
+      console.log(`🔄 Recheck requested for assignment ${assignmentId}, creating new report...`);
+      
+      // Delete the old report
+      await supabase
+        .from('reports')
+        .delete()
+        .eq('id', existingReport.id);
+      
+      // Create new report
+      const { data: newReport, error: insertError } = await supabase
+        .from('reports')
+        .insert([reportData])
+        .select()
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+      reportId = newReport.id;
     } else {
+      // Create new report
       const { data: newReport, error: insertError } = await supabase
         .from('reports')
         .insert([reportData])
@@ -86,10 +109,14 @@ router.post('/generate', authenticateUser, async (req, res) => {
     // Process analysis asynchronously
     processAnalysis(reportId, assignment.extracted_text);
 
+    const responseMessage = recheck ? 'Report recheck started' : 'Report generation started';
+    console.log(`✅ ${responseMessage} for assignment ${assignmentId}, report ID: ${reportId}`);
+    
     res.status(202).json({
-      message: 'Report generation started',
+      message: responseMessage,
       reportId: reportId,
-      status: 'processing'
+      status: 'processing',
+      isRecheck: recheck
     });
 
   } catch (error) {

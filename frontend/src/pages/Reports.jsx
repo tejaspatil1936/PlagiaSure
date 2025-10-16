@@ -79,8 +79,8 @@ const Reports = () => {
       setRechecking(true);
       setError('');
       
-      // Generate a new report for the same assignment
-      const response = await reportsAPI.generate(assignmentId);
+      // Generate a new report for the same assignment with recheck flag
+      const response = await reportsAPI.generate(assignmentId, true); // Pass recheck=true
       console.log('Recheck started:', response.data);
       
       // Start polling for the new report
@@ -91,6 +91,7 @@ const Reports = () => {
     } catch (error) {
       console.error('Failed to recheck report:', error);
       setError(error.response?.data?.error || 'Failed to recheck report');
+      setRechecking(false);
     }
   };
 

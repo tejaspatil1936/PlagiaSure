@@ -53,7 +53,7 @@ export const assignmentsAPI = {
 
 // Reports API
 export const reportsAPI = {
-  generate: (assignmentId) => api.post('/api/reports/generate', { assignmentId }),
+  generate: (assignmentId, recheck = false) => api.post('/api/reports/generate', { assignmentId, recheck }),
   getAll: (params) => api.get('/api/reports', { params }),
   getById: (id) => api.get(`/api/reports/${id}`),
 };
