@@ -1,10 +1,36 @@
 import axios from 'axios';
 import detectPlagiarismTrulyFree from './trulyFreePlagiarism.js';
+import { getCombinedDetection } from './aiDetection.js';
 
 export const detectPlagiarism = async (text) => {
   try {
-    // Use the truly free detection method first (no API keys needed)
-    console.log('Using truly free plagiarism detection methods...');
+    console.log('🚀 Starting comprehensive plagiarism and AI detection...');
+    
+    // Use the new combined detection from AI service
+    const combinedResult = await getCombinedDetection(text);
+    
+    if (combinedResult && combinedResult.plagiarism) {
+      // Convert to legacy format for compatibility
+      return {
+        score: combinedResult.plagiarism.probability,
+        highlight: combinedResult.plagiarism.highlights.map(h => ({
+          text: h.text,
+          source: h.source || 'Unknown Source',
+          score: h.confidence,
+          title: h.title || 'Academic Source',
+          reason: h.reason || 'Content similarity detected'
+        })),
+        sources: combinedResult.plagiarism.sources.map(s => s.url),
+        method: 'Gemini + Hugging Face Combined Detection',
+        aiDetection: {
+          probability: combinedResult.ai.probability,
+          highlights: combinedResult.ai.highlights
+        }
+      };
+    }
+
+    // Fallback to truly free detection
+    console.log('Falling back to truly free plagiarism detection...');
     const trulyFreeResult = await detectPlagiarismTrulyFree(text);
     
     if (trulyFreeResult && trulyFreeResult.score > 0) {

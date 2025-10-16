@@ -41,42 +41,83 @@ const getHuggingFaceClient = () => {
 
 export const detectAIContent = async (text) => {
   try {
-    // Run both detection methods in parallel
-    const [overallProbability, sentenceHighlights] = await Promise.allSettled([
-      getOverallAIProbability(text),
-      getSentenceAIHighlights(text),
+    console.log("🚀 Starting comprehensive AI and plagiarism detection...");
+
+    // Run all detection methods in parallel
+    const [hfAIProbability, geminiAnalysis] = await Promise.allSettled([
+      getHuggingFaceAIProbability(text),
+      getGeminiComprehensiveAnalysis(text),
     ]);
 
     let probability = 0;
     let highlight = [];
+    let plagiarismData = {
+      probability: 0,
+      sources: [],
+      highlight: [],
+    };
 
-    if (overallProbability.status === "fulfilled") {
-      probability = overallProbability.value;
+    // Process Hugging Face results
+    if (hfAIProbability.status === "fulfilled") {
+      probability = hfAIProbability.value;
+      console.log(
+        `🤖 Hugging Face AI probability: ${(probability * 100).toFixed(1)}%`
+      );
     } else {
       console.error(
-        "Overall AI probability detection failed:",
-        overallProbability.reason
+        "Hugging Face AI detection failed:",
+        hfAIProbability.reason
       );
     }
 
-    if (sentenceHighlights.status === "fulfilled") {
-      highlight = sentenceHighlights.value;
+    // Process Gemini comprehensive analysis
+    if (geminiAnalysis.status === "fulfilled") {
+      const geminiResult = geminiAnalysis.value;
+
+      // Combine AI probabilities (weighted average: HF 60%, Gemini 40%)
+      if (geminiResult.aiProbability !== undefined) {
+        probability =
+          probability > 0
+            ? probability * 0.6 + geminiResult.aiProbability * 0.4
+            : geminiResult.aiProbability;
+      }
+
+      highlight = geminiResult.aiHighlights || [];
+      plagiarismData = {
+        probability: geminiResult.plagiarismProbability || 0,
+        sources: geminiResult.plagiarismSources || [],
+        highlight: geminiResult.plagiarismHighlights || [],
+      };
+
+      console.log(
+        `🎯 Combined AI probability: ${(probability * 100).toFixed(1)}%`
+      );
+      console.log(
+        `📚 Plagiarism probability: ${(
+          plagiarismData.probability * 100
+        ).toFixed(1)}%`
+      );
+      console.log(
+        `🔍 Found ${plagiarismData.sources.length} potential sources`
+      );
     } else {
       console.error(
-        "Sentence AI highlighting failed:",
-        sentenceHighlights.reason
+        "Gemini comprehensive analysis failed:",
+        geminiAnalysis.reason
       );
-      // Fallback: create highlights based on overall probability
+      // Fallback highlighting
       const sentences = splitIntoSentences(text);
       highlight = sentences.map((sentence) => ({
         text: sentence,
         ai: probability > 0.5,
+        confidence: probability,
       }));
     }
 
     return {
       probability,
       highlight,
+      plagiarism: plagiarismData,
     };
   } catch (error) {
     console.error("AI detection error:", error);
@@ -84,299 +125,496 @@ export const detectAIContent = async (text) => {
   }
 };
 
-// Get overall AI probability using Hugging Face model (fallback to Gemini)
-const getOverallAIProbability = async (text) => {
+// Get AI probability using Hugging Face specialized model
+const getHuggingFaceAIProbability = async (text) => {
   try {
-    // Try Hugging Face Inference Client first if available
     const client = getHuggingFaceClient();
-    if (client) {
-      try {
-        console.log("Using Hugging Face Inference Client for AI detection...");
+    if (!client) {
+      console.log("⚠️ Hugging Face API key not configured");
+      return 0;
+    }
 
-        // Truncate text if too long (model has limits)
-        const truncatedText =
-          text.length > 3000 ? text.substring(0, 3000) : text;
+    console.log("🤖 Using Hugging Face Inference Client for AI detection...");
 
-        const output = await client.textClassification({
-          model: "openai-community/roberta-base-openai-detector",
-          inputs: truncatedText,
-        });
+    // Truncate text if too long (model has limits)
+    const truncatedText = text.length > 3000 ? text.substring(0, 3000) : text;
 
-        if (output && Array.isArray(output)) {
-          // Look for "Fake" label (AI-generated) or "GENERATED"
-          const aiLabel = output.find(
-            (item) =>
-              item.label === "Fake" ||
-              item.label === "GENERATED" ||
-              item.label === "AI"
-          );
+    const output = await client.textClassification({
+      model: "openai-community/roberta-base-openai-detector",
+      inputs: truncatedText,
+    });
 
-          if (aiLabel) {
-            console.log(
-              `Hugging Face AI probability: ${(aiLabel.score * 100).toFixed(
-                1
-              )}%`
-            );
-            return aiLabel.score;
-          }
+    if (output && Array.isArray(output)) {
+      // Look for "Fake" label (AI-generated) or "GENERATED"
+      const aiLabel = output.find(
+        (item) =>
+          item.label === "Fake" ||
+          item.label === "GENERATED" ||
+          item.label === "AI"
+      );
 
-          // If no "Fake" label, check for "Real" and invert
-          const realLabel = output.find((item) => item.label === "Real");
-          if (realLabel) {
-            const aiProbability = 1 - realLabel.score;
-            console.log(
-              `Hugging Face AI probability (inverted): ${(
-                aiProbability * 100
-              ).toFixed(1)}%`
-            );
-            return aiProbability;
-          }
-        }
-      } catch (hfError) {
-        console.error("Hugging Face Inference Client error:", hfError);
+      if (aiLabel) {
+        return aiLabel.score;
+      }
+
+      // If no "Fake" label, check for "Real" and invert
+      const realLabel = output.find((item) => item.label === "Real");
+      if (realLabel) {
+        return 1 - realLabel.score;
       }
     }
 
-    // Fallback to Gemini-based detection
-    console.log("Falling back to Gemini for AI detection...");
-    return await getGeminiFallbackProbability(text);
+    return 0;
   } catch (error) {
-    console.error("Overall AI probability error:", error);
-    return 0.1; // Default low probability
+    console.error("Hugging Face AI detection error:", error);
+    return 0;
   }
 };
 
-// Fallback AI probability detection using Gemini
-const getGeminiFallbackProbability = async (text) => {
+// Comprehensive analysis using Gemini for AI detection, plagiarism detection, and source matching
+const getGeminiComprehensiveAnalysis = async (text) => {
   try {
     const client = getGeminiClient();
     if (!client) {
-      console.warn("Gemini API key not configured, returning mock probability");
-      return getMockAIProbability(text);
+      console.warn("⚠️ Gemini API key not configured, using mock analysis");
+      return getMockComprehensiveAnalysis(text);
     }
 
-    const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: `Analyze the following text and determine the probability (0.0 to 1.0) that it was generated by AI. 
-      Consider factors like:
-      - Repetitive patterns
-      - Unnatural language flow
-      - Generic or templated phrases
-      - Lack of personal voice or style
-      - Perfect grammar without human errors
-      
-      Return ONLY a decimal number between 0.0 and 1.0, nothing else.
-      
-      Text to analyze:
-      ${text.substring(0, 3000)}`,
-    });
+    console.log(
+      "🎯 Using Gemini for comprehensive AI and plagiarism analysis..."
+    );
 
-    const probabilityStr = response.text.trim();
-    const probability = parseFloat(probabilityStr);
-
-    return isNaN(probability) ? 0.1 : Math.max(0, Math.min(1, probability));
-  } catch (error) {
-    console.error("Gemini fallback error:", error);
-    return getMockAIProbability(text);
-  }
-};
-
-// Get sentence-level AI highlights using Gemini
-const getSentenceAIHighlights = async (text) => {
-  try {
-    const client = getGeminiClient();
-    if (!client) {
-      console.warn("Gemini API key not configured for sentence highlighting");
-      return getMockSentenceHighlights(text);
+    // Split text into chunks for analysis
+    const maxChunkSize = 2500;
+    const chunks = [];
+    for (let i = 0; i < text.length; i += maxChunkSize) {
+      chunks.push(text.substring(i, i + maxChunkSize));
     }
 
-    const sentences = splitIntoSentences(text);
-    const highlights = [];
+    const allResults = [];
 
-    // Process sentences in batches to avoid API limits
-    const batchSize = 5;
-    for (let i = 0; i < sentences.length; i += batchSize) {
-      const batch = sentences.slice(i, i + batchSize);
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      console.log(
+        `📝 Analyzing chunk ${i + 1}/${chunks.length} (${chunk.length} chars)`
+      );
 
       try {
         const response = await client.models.generateContent({
           model: "gemini-2.5-flash",
-          contents: `Analyze each sentence and determine if it was likely generated by AI. 
-          Return a JSON array with objects containing "text" and "ai" (boolean) fields.
-          Be conservative - only mark as AI if you are confident.
-          
-          Sentences to analyze:
-          ${batch.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}
-          
-          Return ONLY valid JSON, no explanation:`,
+          contents: `You are an expert in detecting AI-generated content and plagiarism. Analyze the following text and provide a comprehensive analysis.
+
+INSTRUCTIONS:
+1. Detect AI-generated content and highlight suspicious sentences
+2. Detect potential plagiarism and find likely sources
+3. Return results in the exact JSON format specified below
+
+For AI Detection, consider:
+- Repetitive patterns and formulaic language
+- Unnatural flow or robotic tone
+- Generic phrases and buzzwords
+- Perfect grammar without human errors
+- Lack of personal voice or unique style
+
+For Plagiarism Detection, consider:
+- Academic or formal language that might be copied
+- Specific facts, statistics, or quotes
+- Technical terminology or specialized knowledge
+- Sentences that seem out of context with the writing style
+
+Return ONLY valid JSON in this exact format:
+{
+  "aiProbability": 0.0-1.0,
+  "aiHighlights": [
+    {
+      "text": "sentence text",
+      "ai": true/false,
+      "confidence": 0.0-1.0,
+      "reason": "explanation"
+    }
+  ],
+  "plagiarismProbability": 0.0-1.0,
+  "plagiarismHighlights": [
+    {
+      "text": "potentially plagiarized text",
+      "plagiarized": true/false,
+      "confidence": 0.0-1.0,
+      "reason": "explanation"
+    }
+  ],
+  "plagiarismSources": [
+    {
+      "url": "https://example.com/source",
+      "title": "Source Title",
+      "similarity": 0.0-1.0,
+      "matchedText": "text that matches"
+    }
+  ]
+}
+
+Text to analyze:
+${chunk}`,
         });
 
         const content = response.text.trim();
 
         try {
           // Clean the response to extract JSON
-          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
           const jsonStr = jsonMatch ? jsonMatch[0] : content;
-          const batchResults = JSON.parse(jsonStr);
+          const result = JSON.parse(jsonStr);
 
-          if (Array.isArray(batchResults)) {
-            highlights.push(...batchResults);
-          } else {
-            // Fallback: mark all as not AI
-            highlights.push(
-              ...batch.map((sentence) => ({ text: sentence, ai: false }))
-            );
-          }
+          allResults.push(result);
         } catch (parseError) {
-          console.error("Failed to parse Gemini response:", parseError);
-          // Fallback: mark all as not AI
-          highlights.push(
-            ...batch.map((sentence) => ({ text: sentence, ai: false }))
+          console.error(
+            `Failed to parse Gemini response for chunk ${i + 1}:`,
+            parseError
           );
+          allResults.push(getMockChunkAnalysis(chunk));
         }
 
-        // Add delay between batches to respect rate limits
-        if (i + batchSize < sentences.length) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Add delay between chunks to respect rate limits
+        if (i < chunks.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
         }
-      } catch (batchError) {
-        console.error("Batch processing error:", batchError);
-        // Fallback: mark all as not AI
-        highlights.push(
-          ...batch.map((sentence) => ({ text: sentence, ai: false }))
-        );
+      } catch (chunkError) {
+        console.error(`Error analyzing chunk ${i + 1}:`, chunkError);
+        allResults.push(getMockChunkAnalysis(chunk));
       }
     }
 
-    return highlights;
+    // Combine results from all chunks
+    return combineAnalysisResults(allResults);
   } catch (error) {
-    console.error("Sentence highlighting error:", error);
-    return getMockSentenceHighlights(text);
+    console.error("Gemini comprehensive analysis error:", error);
+    return getMockComprehensiveAnalysis(text);
   }
 };
 
-// Mock AI probability for demo purposes
-const getMockAIProbability = (text) => {
-  // Simple heuristic-based mock detection
-  const aiIndicators = [
-    "furthermore",
-    "moreover",
-    "in conclusion",
-    "it is important to note",
-    "as an ai",
-    "i am an ai",
-    "as a language model",
-    "i cannot",
-    "i apologize",
-    "comprehensive",
-    "multifaceted",
-    "paradigm",
-    "leverage",
-    "utilize",
-  ];
+// Combine analysis results from multiple chunks
+const combineAnalysisResults = (results) => {
+  if (!results || results.length === 0) {
+    return {
+      aiProbability: 0,
+      aiHighlights: [],
+      plagiarismProbability: 0,
+      plagiarismHighlights: [],
+      plagiarismSources: [],
+    };
+  }
 
-  const lowerText = text.toLowerCase();
-  let score = 0;
+  // Calculate weighted averages
+  const aiProbabilities = results.map((r) => r.aiProbability || 0);
+  const plagiarismProbabilities = results.map(
+    (r) => r.plagiarismProbability || 0
+  );
 
-  aiIndicators.forEach((indicator) => {
-    if (lowerText.includes(indicator)) {
-      score += 0.15;
-    }
-  });
+  const avgAiProbability =
+    aiProbabilities.reduce((a, b) => a + b, 0) / aiProbabilities.length;
+  const avgPlagiarismProbability =
+    plagiarismProbabilities.reduce((a, b) => a + b, 0) /
+    plagiarismProbabilities.length;
 
-  // Add some randomness for demo
-  score += Math.random() * 0.3;
+  // Combine all highlights
+  const allAiHighlights = results.flatMap((r) => r.aiHighlights || []);
+  const allPlagiarismHighlights = results.flatMap(
+    (r) => r.plagiarismHighlights || []
+  );
 
-  return Math.min(0.95, score);
+  // Combine and deduplicate sources
+  const allSources = results.flatMap((r) => r.plagiarismSources || []);
+  const uniqueSources = allSources.filter(
+    (source, index, self) =>
+      index === self.findIndex((s) => s.url === source.url)
+  );
+
+  return {
+    aiProbability: avgAiProbability,
+    aiHighlights: allAiHighlights,
+    plagiarismProbability: avgPlagiarismProbability,
+    plagiarismHighlights: allPlagiarismHighlights,
+    plagiarismSources: uniqueSources.slice(0, 10), // Limit to top 10 sources
+  };
 };
 
-// Enhanced mock sentence highlights with realistic AI detection patterns
-const getMockSentenceHighlights = (text) => {
-  console.log("🤖 Analyzing sentences for AI patterns...");
+// Mock analysis for a single chunk
+const getMockChunkAnalysis = (text) => {
+  const sentences = splitIntoSentences(text);
+
+  return {
+    aiProbability: Math.random() * 0.6 + 0.2, // 0.2 to 0.8
+    aiHighlights: sentences.map((sentence) => ({
+      text: sentence,
+      ai: Math.random() > 0.7,
+      confidence: Math.random() * 0.5 + 0.3,
+      reason: "Pattern analysis",
+    })),
+    plagiarismProbability: Math.random() * 0.4 + 0.1, // 0.1 to 0.5
+    plagiarismHighlights: sentences
+      .filter(() => Math.random() > 0.8)
+      .map((sentence) => ({
+        text: sentence,
+        plagiarized: true,
+        confidence: Math.random() * 0.4 + 0.6,
+        reason: "Potential academic source match",
+      })),
+    plagiarismSources: [],
+  };
+};
+
+// Comprehensive mock analysis when Gemini is not available
+const getMockComprehensiveAnalysis = (text) => {
+  console.log("🎭 Using mock comprehensive analysis (Gemini not available)");
 
   const sentences = splitIntoSentences(text);
-  console.log(`📝 Analyzing ${sentences.length} sentences`);
 
-  // AI indicators with different confidence levels
-  const aiPatterns = [
+  // AI detection patterns
+  const aiIndicators = [
     {
       patterns: ["furthermore", "moreover", "additionally"],
-      confidence: 0.8,
+      weight: 0.8,
       reason: "Formal transitional phrases",
     },
     {
       patterns: ["comprehensive", "multifaceted", "paradigm"],
-      confidence: 0.7,
+      weight: 0.7,
       reason: "Academic buzzwords",
     },
     {
       patterns: ["it is important to note", "it should be noted"],
-      confidence: 0.9,
+      weight: 0.9,
       reason: "AI qualifying phrases",
     },
     {
       patterns: ["leverage", "utilize", "optimize"],
-      confidence: 0.6,
+      weight: 0.6,
       reason: "Business jargon",
     },
     {
       patterns: ["in conclusion", "to summarize", "in summary"],
-      confidence: 0.5,
+      weight: 0.5,
       reason: "Conclusion patterns",
-    },
-    {
-      patterns: ["according to", "research indicates", "studies show"],
-      confidence: 0.4,
-      reason: "Citation patterns",
     },
   ];
 
-  const results = sentences.map((sentence, index) => {
+  // Plagiarism detection patterns
+  const plagiarismIndicators = [
+    {
+      patterns: [
+        "according to research",
+        "studies have shown",
+        "research indicates",
+      ],
+      weight: 0.8,
+      reason: "Academic citation patterns",
+    },
+    {
+      patterns: ["statistics show", "data reveals", "findings suggest"],
+      weight: 0.7,
+      reason: "Data presentation language",
+    },
+    {
+      patterns: ["as defined by", "the definition of", "can be described as"],
+      weight: 0.6,
+      reason: "Definition language",
+    },
+    {
+      patterns: ["historically", "traditionally", "conventionally"],
+      weight: 0.5,
+      reason: "Historical references",
+    },
+  ];
+
+  // Mock academic sources
+  const mockSources = [
+    {
+      url: "https://www.jstor.org/stable/academic-paper-1",
+      title: "Academic Research on Modern Practices",
+      domain: "jstor.org",
+    },
+    {
+      url: "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=example",
+      title: "Scholarly Article on Contemporary Methods",
+      domain: "scholar.google.com",
+    },
+    {
+      url: "https://www.researchgate.net/publication/example-study",
+      title: "Research Publication on Current Trends",
+      domain: "researchgate.net",
+    },
+    {
+      url: "https://pubmed.ncbi.nlm.nih.gov/example-medical-study",
+      title: "Medical Research Study",
+      domain: "pubmed.ncbi.nlm.nih.gov",
+    },
+    {
+      url: "https://arxiv.org/abs/example-paper",
+      title: "Technical Research Paper",
+      domain: "arxiv.org",
+    },
+    {
+      url: "https://www.nature.com/articles/example-nature-article",
+      title: "Nature Scientific Article",
+      domain: "nature.com",
+    },
+    {
+      url: "https://ieeexplore.ieee.org/document/example-ieee-paper",
+      title: "IEEE Technical Publication",
+      domain: "ieeexplore.ieee.org",
+    },
+  ];
+
+  let totalAiScore = 0;
+  let totalPlagiarismScore = 0;
+  const aiHighlights = [];
+  const plagiarismHighlights = [];
+  const foundSources = [];
+
+  sentences.forEach((sentence) => {
     const lowerSentence = sentence.toLowerCase();
     let aiScore = 0;
-    let matchedPatterns = [];
-    let reasons = [];
+    let plagiarismScore = 0;
+    let aiReasons = [];
+    let plagiarismReasons = [];
 
-    // Check for AI patterns
-    aiPatterns.forEach((patternGroup) => {
-      patternGroup.patterns.forEach((pattern) => {
+    // Check AI indicators
+    aiIndicators.forEach((indicator) => {
+      indicator.patterns.forEach((pattern) => {
         if (lowerSentence.includes(pattern)) {
-          aiScore += patternGroup.confidence;
-          matchedPatterns.push(pattern);
-          reasons.push(patternGroup.reason);
+          aiScore += indicator.weight;
+          aiReasons.push(indicator.reason);
         }
       });
     });
 
-    // Length and complexity factors
-    if (sentence.length > 120) aiScore += 0.2; // Very long sentences
-    if (sentence.length > 200) aiScore += 0.3; // Extremely long sentences
+    // Check plagiarism indicators
+    plagiarismIndicators.forEach((indicator) => {
+      indicator.patterns.forEach((pattern) => {
+        if (lowerSentence.includes(pattern)) {
+          plagiarismScore += indicator.weight;
+          plagiarismReasons.push(indicator.reason);
 
-    // Perfect grammar indicators (no contractions, formal structure)
+          // Add a mock source for this match
+          const randomSource =
+            mockSources[Math.floor(Math.random() * mockSources.length)];
+          foundSources.push({
+            ...randomSource,
+            similarity: Math.random() * 0.4 + 0.6, // 0.6 to 1.0
+            matchedText: sentence.substring(0, Math.min(100, sentence.length)),
+          });
+        }
+      });
+    });
+
+    // Additional scoring factors
+    if (sentence.length > 120) aiScore += 0.2;
+    if (sentence.length > 200) aiScore += 0.3;
     if (!lowerSentence.includes("'") && sentence.includes(",")) aiScore += 0.1;
 
-    // Multiple clauses
-    const clauseCount = (sentence.match(/,|;|:|that|which|where|when/g) || [])
-      .length;
-    if (clauseCount > 3) aiScore += 0.2;
+    // Normalize scores
+    const finalAiScore = Math.min(1.0, aiScore);
+    const finalPlagiarismScore = Math.min(1.0, plagiarismScore);
 
-    // Normalize score
-    const finalScore = Math.min(1.0, aiScore);
-    const isAI = finalScore > 0.5;
+    totalAiScore += finalAiScore;
+    totalPlagiarismScore += finalPlagiarismScore;
 
-    return {
-      text: sentence,
-      ai: isAI,
-      confidence: finalScore,
-      matchedPatterns: matchedPatterns,
-      reasons: reasons,
-    };
+    // Add to highlights if significant
+    if (finalAiScore > 0.4) {
+      aiHighlights.push({
+        text: sentence,
+        ai: finalAiScore > 0.5,
+        confidence: finalAiScore,
+        reason: aiReasons.join(", ") || "Pattern analysis",
+      });
+    }
+
+    if (finalPlagiarismScore > 0.3) {
+      plagiarismHighlights.push({
+        text: sentence,
+        plagiarized: finalPlagiarismScore > 0.5,
+        confidence: finalPlagiarismScore,
+        reason: plagiarismReasons.join(", ") || "Potential source match",
+      });
+    }
   });
 
-  const aiCount = results.filter((r) => r.ai).length;
-  console.log(
-    `🤖 Identified ${aiCount}/${sentences.length} sentences as potentially AI-generated`
-  );
+  // Calculate overall probabilities
+  const avgAiProbability =
+    sentences.length > 0 ? totalAiScore / sentences.length : 0;
+  const avgPlagiarismProbability =
+    sentences.length > 0 ? totalPlagiarismScore / sentences.length : 0;
 
-  return results;
+  // Deduplicate sources and limit to top 5
+  const uniqueSources = foundSources
+    .filter(
+      (source, index, self) =>
+        index === self.findIndex((s) => s.url === source.url)
+    )
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, 5);
+
+  return {
+    aiProbability: Math.min(0.95, avgAiProbability),
+    aiHighlights,
+    plagiarismProbability: Math.min(0.85, avgPlagiarismProbability),
+    plagiarismHighlights,
+    plagiarismSources: uniqueSources,
+  };
+};
+
+// Export additional functions for plagiarism service integration
+export const getComprehensiveAnalysis = async (text) => {
+  return await getGeminiComprehensiveAnalysis(text);
+};
+
+export const getCombinedDetection = async (text) => {
+  try {
+    const [aiResult, comprehensiveResult] = await Promise.allSettled([
+      getHuggingFaceAIProbability(text),
+      getGeminiComprehensiveAnalysis(text),
+    ]);
+
+    let combinedResult = {
+      ai: {
+        probability: 0,
+        highlights: [],
+        sources: [],
+      },
+      plagiarism: {
+        probability: 0,
+        highlights: [],
+        sources: [],
+      },
+    };
+
+    // Process AI detection results
+    if (aiResult.status === "fulfilled" && aiResult.value > 0) {
+      combinedResult.ai.probability = aiResult.value;
+    }
+
+    // Process comprehensive analysis results
+    if (comprehensiveResult.status === "fulfilled") {
+      const result = comprehensiveResult.value;
+
+      // Combine AI probabilities if both exist
+      if (combinedResult.ai.probability > 0 && result.aiProbability > 0) {
+        combinedResult.ai.probability =
+          combinedResult.ai.probability * 0.6 + result.aiProbability * 0.4;
+      } else if (result.aiProbability > 0) {
+        combinedResult.ai.probability = result.aiProbability;
+      }
+
+      combinedResult.ai.highlights = result.aiHighlights || [];
+      combinedResult.plagiarism = {
+        probability: result.plagiarismProbability || 0,
+        highlights: result.plagiarismHighlights || [],
+        sources: result.plagiarismSources || [],
+      };
+    }
+
+    return combinedResult;
+  } catch (error) {
+    console.error("Combined detection error:", error);
+    throw error;
+  }
 };

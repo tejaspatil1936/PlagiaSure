@@ -223,14 +223,39 @@ async function processAnalysis(reportId, text) {
     if (aiResult.status === 'fulfilled') {
       aiProbability = aiResult.value.probability || 0;
       aiHighlight = aiResult.value.highlight || [];
+      
+      // Check if plagiarism data is included in AI detection result
+      if (aiResult.value.plagiarism) {
+        plagiarismScore = Math.max(plagiarismScore, aiResult.value.plagiarism.probability || 0);
+        if (aiResult.value.plagiarism.highlight && aiResult.value.plagiarism.highlight.length > 0) {
+          plagiarismHighlight = [...plagiarismHighlight, ...aiResult.value.plagiarism.highlight];
+        }
+      }
     } else {
       console.error('AI detection failed:', aiResult.reason);
     }
 
     // Process plagiarism detection results
     if (plagiarismResult.status === 'fulfilled') {
-      plagiarismScore = plagiarismResult.value.score || 0;
-      plagiarismHighlight = plagiarismResult.value.highlight || [];
+      plagiarismScore = Math.max(plagiarismScore, plagiarismResult.value.score || 0);
+      
+      // Merge highlights, avoiding duplicates
+      const existingTexts = new Set(plagiarismHighlight.map(h => h.text));
+      const newHighlights = (plagiarismResult.value.highlight || [])
+        .filter(h => !existingTexts.has(h.text));
+      
+      plagiarismHighlight = [...plagiarismHighlight, ...newHighlights];
+      
+      // Add AI detection data if available
+      if (plagiarismResult.value.aiDetection) {
+        aiProbability = Math.max(aiProbability, plagiarismResult.value.aiDetection.probability || 0);
+        
+        const existingAiTexts = new Set(aiHighlight.map(h => h.text));
+        const newAiHighlights = (plagiarismResult.value.aiDetection.highlights || [])
+          .filter(h => !existingAiTexts.has(h.text));
+        
+        aiHighlight = [...aiHighlight, ...newAiHighlights];
+      }
     } else {
       console.error('Plagiarism detection failed:', plagiarismResult.reason);
     }
@@ -247,6 +272,14 @@ async function processAnalysis(reportId, text) {
     } else {
       verdict = 'Content appears original';
     }
+
+    // Log analysis results
+    console.log(`📊 Analysis Results for Report ${reportId}:`);
+    console.log(`🤖 AI Probability: ${(aiProbability * 100).toFixed(1)}%`);
+    console.log(`📚 Plagiarism Score: ${(plagiarismScore * 100).toFixed(1)}%`);
+    console.log(`🎯 AI Highlights: ${aiHighlight.length} items`);
+    console.log(`🔍 Plagiarism Highlights: ${plagiarismHighlight.length} items`);
+    console.log(`⚖️ Verdict: ${verdict}`);
 
     // Update report with results
     const { error: updateError } = await supabase
