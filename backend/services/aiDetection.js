@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { InferenceClient } from "@huggingface/inference";
 import { splitIntoSentences } from "../utils/textExtractor.js";
 
@@ -13,7 +13,8 @@ const getGeminiClient = () => {
     process.env.GEMINI_API_KEY !== "your_gemini_api_key_here"
   ) {
     try {
-      genAI = new GoogleGenAI({});
+      genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      console.log("✅ Gemini client initialized successfully");
     } catch (error) {
       console.error("Failed to initialize Gemini client:", error);
       return null;
@@ -136,35 +137,80 @@ const getHuggingFaceAIProbability = async (text) => {
 
     console.log("🤖 Using Hugging Face Inference Client for AI detection...");
 
-    // Truncate text if too long (model has limits)
-    const truncatedText = text.length > 3000 ? text.substring(0, 3000) : text;
+    // Truncate text more aggressively for Hugging Face model (RoBERTa has ~512 token limit)
+    // Rough estimate: 1 token ≈ 4 characters, so 512 tokens ≈ 2048 characters
+    // Use 1500 characters to be safe
+    const truncatedText = text.length > 1500 ? text.substring(0, 1500) : text;
+    
+    console.log(`📏 Text length: ${text.length} chars, using: ${truncatedText.length} chars for HF analysis`);
 
-    const output = await client.textClassification({
-      model: "openai-community/roberta-base-openai-detector",
-      inputs: truncatedText,
-    });
+    try {
+      const output = await client.textClassification({
+        model: "openai-community/roberta-base-openai-detector",
+        inputs: truncatedText,
+      });
 
-    if (output && Array.isArray(output)) {
-      // Look for "Fake" label (AI-generated) or "GENERATED"
-      const aiLabel = output.find(
-        (item) =>
-          item.label === "Fake" ||
-          item.label === "GENERATED" ||
-          item.label === "AI"
-      );
+      if (output && Array.isArray(output)) {
+        // Look for "Fake" label (AI-generated) or "GENERATED"
+        const aiLabel = output.find(
+          (item) =>
+            item.label === "Fake" ||
+            item.label === "GENERATED" ||
+            item.label === "AI"
+        );
 
-      if (aiLabel) {
-        return aiLabel.score;
+        if (aiLabel) {
+          console.log(`✅ HF detected AI probability: ${(aiLabel.score * 100).toFixed(1)}%`);
+          return aiLabel.score;
+        }
+
+        // If no "Fake" label, check for "Real" and invert
+        const realLabel = output.find((item) => item.label === "Real");
+        if (realLabel) {
+          const aiProbability = 1 - realLabel.score;
+          console.log(`✅ HF detected AI probability (inverted): ${(aiProbability * 100).toFixed(1)}%`);
+          return aiProbability;
+        }
       }
 
-      // If no "Fake" label, check for "Real" and invert
-      const realLabel = output.find((item) => item.label === "Real");
-      if (realLabel) {
-        return 1 - realLabel.score;
+      console.log("⚠️ HF returned unexpected output format");
+      return 0;
+    } catch (hfApiError) {
+      // Handle specific API errors
+      if (hfApiError.message && hfApiError.message.includes('tensor')) {
+        console.error("❌ HF model input size error - text still too long, falling back to shorter sample");
+        
+        // Try with even shorter text
+        const shorterText = text.substring(0, 800);
+        try {
+          const retryOutput = await client.textClassification({
+            model: "openai-community/roberta-base-openai-detector",
+            inputs: shorterText,
+          });
+          
+          if (retryOutput && Array.isArray(retryOutput)) {
+            const aiLabel = retryOutput.find(item => item.label === "Fake" || item.label === "GENERATED" || item.label === "AI");
+            if (aiLabel) {
+              console.log(`✅ HF retry success: ${(aiLabel.score * 100).toFixed(1)}%`);
+              return aiLabel.score;
+            }
+            
+            const realLabel = retryOutput.find(item => item.label === "Real");
+            if (realLabel) {
+              const aiProbability = 1 - realLabel.score;
+              console.log(`✅ HF retry success (inverted): ${(aiProbability * 100).toFixed(1)}%`);
+              return aiProbability;
+            }
+          }
+        } catch (retryError) {
+          console.error("❌ HF retry also failed:", retryError.message);
+        }
+      } else {
+        console.error("❌ HF API error:", hfApiError.message);
       }
+      
+      throw hfApiError; // Re-throw to be caught by outer try-catch
     }
-
-    return 0;
   } catch (error) {
     console.error("Hugging Face AI detection error:", error);
     return 0;
@@ -200,9 +246,8 @@ const getGeminiComprehensiveAnalysis = async (text) => {
       );
 
       try {
-        const response = await client.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: `You are an expert AI and plagiarism detection system. Analyze the text and return ONLY a valid JSON response.
+        const model = client.getGenerativeModel({ model: "models/gemini-pro" });
+        const response = await model.generateContent([`You are an expert AI and plagiarism detection system. Analyze the text and return ONLY a valid JSON response.
 
 CRITICAL: Your response must be ONLY valid JSON, no explanations, no markdown, no extra text.
 
@@ -246,10 +291,9 @@ Return this EXACT JSON structure:
 Text to analyze:
 ${chunk}
 
-JSON Response:`,
-        });
+JSON Response:`]);
 
-        const content = response.text.trim();
+        const content = response.response.text().trim();
 
         try {
           // Clean the response to extract JSON

@@ -228,6 +228,87 @@ router.get('/', authenticateUser, async (req, res) => {
   }
 });
 
+// Re-extract text from assignment file
+router.post('/:id/reextract', authenticateUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Get assignment
+    const { data: assignment, error: fetchError } = await supabaseAdmin
+      .from('assignments')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError || !assignment) {
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+
+    console.log(`🔄 Re-extracting text for assignment: ${assignment.assignment_title}`);
+
+    try {
+      // Download file from Supabase Storage
+      const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+        .from(process.env.SUPABASE_BUCKET_NAME)
+        .download(assignment.file_path);
+
+      if (downloadError) {
+        console.error('File download error:', downloadError);
+        return res.status(500).json({ error: 'Failed to download file for re-extraction' });
+      }
+
+      // Convert to buffer
+      const buffer = Buffer.from(await fileData.arrayBuffer());
+      console.log(`📁 Downloaded file: ${buffer.length} bytes`);
+
+      // Extract text
+      const extractedText = await extractTextFromFile(buffer, assignment.file_type);
+      console.log(`📝 Extracted text: ${extractedText.length} characters`);
+
+      if (!extractedText || extractedText.length < 10) {
+        return res.status(400).json({ 
+          error: 'Text extraction returned minimal content. This may be a scanned document or image-based PDF.' 
+        });
+      }
+
+      // Update assignment with new extracted text
+      const { data: updatedAssignment, error: updateError } = await supabaseAdmin
+        .from('assignments')
+        .update({ 
+          extracted_text: extractedText,
+          status: 'processed'
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        return res.status(500).json({ error: 'Failed to update assignment with extracted text' });
+      }
+
+      res.json({
+        message: 'Text re-extraction completed successfully',
+        assignment: updatedAssignment,
+        extractedLength: extractedText.length
+      });
+
+    } catch (extractError) {
+      console.error('Text extraction error:', extractError);
+      res.status(500).json({ 
+        error: 'Text extraction failed',
+        details: extractError.message 
+      });
+    }
+
+  } catch (error) {
+    console.error('Re-extract text error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Delete assignment
 router.delete('/:id', authenticateUser, async (req, res) => {
   try {

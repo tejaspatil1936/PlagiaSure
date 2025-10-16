@@ -49,6 +49,7 @@ export const assignmentsAPI = {
   getAll: (params) => api.get('/api/assignments', { params }),
   getById: (id) => api.get(`/api/assignments/${id}`),
   delete: (id) => api.delete(`/api/assignments/${id}`),
+  reextractText: (id) => api.post(`/api/assignments/${id}/reextract`),
 };
 
 // Reports API
