@@ -86,15 +86,259 @@ const Reports = () => {
             Back to Reports
           </Link>
           
-          {/* Report Details Here */}
+          {/* Comprehensive Report Details */}
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Report Details</h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Analysis results and detection scores
-              </p>
+            <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    {selectedReport.assignments?.assignment_title || 'Report Details'}
+                  </h3>
+                  <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                    Analysis results and detection scores
+                  </p>
+                  {selectedReport.assignments && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      <p>Student: {selectedReport.assignments.student_name}</p>
+                      <p>Course: {selectedReport.assignments.course_name}</p>
+                      <p>File: {selectedReport.assignments.file_name}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={cn(
+                    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                    (selectedReport.ai_probability > 0.7 || selectedReport.plagiarism_score > 0.3) && "bg-red-100 text-red-800",
+                    (selectedReport.ai_probability > 0.4 || selectedReport.plagiarism_score > 0.15) && (selectedReport.ai_probability <= 0.7 && selectedReport.plagiarism_score <= 0.3) && "bg-yellow-100 text-yellow-800",
+                    (selectedReport.ai_probability <= 0.4 && selectedReport.plagiarism_score <= 0.15) && "bg-green-100 text-green-800"
+                  )}>
+                    {(selectedReport.ai_probability > 0.7 || selectedReport.plagiarism_score > 0.3) ? 'HIGH RISK' :
+                     (selectedReport.ai_probability > 0.4 || selectedReport.plagiarism_score > 0.15) ? 'MEDIUM RISK' : 'LOW RISK'}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {formatDate(selectedReport.completed_at || selectedReport.created_at)}
+                  </span>
+                </div>
+              </div>
             </div>
-            {/* Add your existing report details rendering here */}
+
+            {/* Status and Progress */}
+            {selectedReport.status === 'processing' && (
+              <div className="px-4 py-3 bg-blue-50 border-b border-gray-200">
+                <div className="flex items-center">
+                  <Clock className="h-5 w-5 text-blue-500 animate-spin mr-2" />
+                  <span className="text-sm text-blue-700">
+                    {selectedReport.progress_message || 'Generating report...'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {selectedReport.status === 'failed' && (
+              <div className="px-4 py-3 bg-red-50 border-b border-gray-200">
+                <div className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+                  <span className="text-sm text-red-700">
+                    Report generation failed: {selectedReport.error_message || 'Unknown error'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Summary Cards */}
+            {selectedReport.status === 'completed' && (
+              <>
+                <div className="px-4 py-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* AI Detection Card */}
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-gray-900">AI Content Detection</h4>
+                        <BarChart3 className="h-5 w-5 text-purple-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-2xl font-bold text-purple-600">
+                            {((selectedReport.ai_probability || 0) * 100).toFixed(1)}%
+                          </span>
+                          <span className={cn(
+                            "text-xs px-2 py-1 rounded-full font-medium",
+                            selectedReport.ai_probability > 0.7 && "bg-red-100 text-red-700",
+                            (selectedReport.ai_probability > 0.4 && selectedReport.ai_probability <= 0.7) && "bg-yellow-100 text-yellow-700",
+                            selectedReport.ai_probability <= 0.4 && "bg-green-100 text-green-700"
+                          )}>
+                            {selectedReport.ai_probability > 0.7 ? 'High' : 
+                             selectedReport.ai_probability > 0.4 ? 'Medium' : 'Low'} confidence
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${(selectedReport.ai_probability || 0) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Plagiarism Detection Card */}
+                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-gray-900">Plagiarism Detection</h4>
+                        <FileText className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-2xl font-bold text-blue-600">
+                            {((selectedReport.plagiarism_score || 0) * 100).toFixed(1)}%
+                          </span>
+                          <span className={cn(
+                            "text-xs px-2 py-1 rounded-full font-medium",
+                            selectedReport.plagiarism_score > 0.5 && "bg-red-100 text-red-700",
+                            (selectedReport.plagiarism_score > 0.2 && selectedReport.plagiarism_score <= 0.5) && "bg-yellow-100 text-yellow-700",
+                            selectedReport.plagiarism_score <= 0.2 && "bg-green-100 text-green-700"
+                          )}>
+                            {selectedReport.plagiarism_score > 0.5 ? 'High' : 
+                             selectedReport.plagiarism_score > 0.2 ? 'Medium' : 'Low'} confidence
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${(selectedReport.plagiarism_score || 0) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Verdict Section */}
+                {selectedReport.verdict && (
+                  <div className="px-4 py-4 border-t border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Analysis Verdict</h4>
+                    <div className={cn(
+                      "p-3 rounded-lg border-l-4",
+                      (selectedReport.ai_probability > 0.7 || selectedReport.plagiarism_score > 0.3) && "bg-red-50 border-red-400 text-red-700",
+                      (selectedReport.ai_probability > 0.4 || selectedReport.plagiarism_score > 0.15) && (selectedReport.ai_probability <= 0.7 && selectedReport.plagiarism_score <= 0.3) && "bg-yellow-50 border-yellow-400 text-yellow-700",
+                      (selectedReport.ai_probability <= 0.4 && selectedReport.plagiarism_score <= 0.15) && "bg-green-50 border-green-400 text-green-700"
+                    )}>
+                      <p className="font-medium">{selectedReport.verdict}</p>
+                      <p className="mt-1 text-sm opacity-90">
+                        Analysis of content shows {((selectedReport.ai_probability || 0) * 100).toFixed(1)}% AI probability 
+                        and {((selectedReport.plagiarism_score || 0) * 100).toFixed(1)}% plagiarism similarity.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                <div className="px-4 py-4 border-t border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">Recommendations</h4>
+                  <ul className="space-y-1">
+                    {(selectedReport.ai_probability > 0.7 || selectedReport.plagiarism_score > 0.3) && (
+                      <li className="flex items-start">
+                        <CheckCircle className="h-4 w-4 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+                        <span className="text-sm text-gray-700">Immediate manual review required</span>
+                      </li>
+                    )}
+                    {selectedReport.ai_probability > 0.7 && (
+                      <li className="flex items-start">
+                        <CheckCircle className="h-4 w-4 text-orange-500 mt-0.5 mr-2 flex-shrink-0" />
+                        <span className="text-sm text-gray-700">Discuss AI usage policies with student</span>
+                      </li>
+                    )}
+                    {selectedReport.plagiarism_score > 0.3 && (
+                      <li className="flex items-start">
+                        <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                        <span className="text-sm text-gray-700">Review flagged passages with student</span>
+                      </li>
+                    )}
+                    {(selectedReport.ai_probability <= 0.4 && selectedReport.plagiarism_score <= 0.15) && (
+                      <li className="flex items-start">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" />
+                        <span className="text-sm text-gray-700">No immediate action required - standard grading can proceed</span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+
+                {/* AI Highlights */}
+                {selectedReport.ai_highlight && selectedReport.ai_highlight.length > 0 && (
+                  <div className="px-4 py-4 border-t border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">AI-Generated Content Highlights</h4>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {selectedReport.ai_highlight.filter(h => h.ai).slice(0, 10).map((highlight, index) => (
+                        <div key={index} className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                          <p className="text-sm text-gray-800">"{highlight.text}"</p>
+                          <span className="inline-block mt-1 text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
+                            AI-Generated
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Plagiarism Highlights */}
+                {selectedReport.plagiarism_highlight && selectedReport.plagiarism_highlight.length > 0 && (
+                  <div className="px-4 py-4 border-t border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">Plagiarism Highlights</h4>
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {selectedReport.plagiarism_highlight.slice(0, 10).map((highlight, index) => (
+                        <div key={index} className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm text-gray-800 mb-2">"{highlight.text}"</p>
+                          <div className="flex items-center justify-between text-xs">
+                            <a 
+                              href={highlight.source} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 flex items-center"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              {highlight.title || 'Source'}
+                            </a>
+                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              {((highlight.score || 0) * 100).toFixed(1)}% match
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Analysis Summary */}
+                <div className="px-4 py-4 border-t border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Analysis Summary</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="text-center p-2 bg-gray-50 rounded">
+                      <div className="font-semibold text-gray-900">
+                        {selectedReport.ai_highlight ? selectedReport.ai_highlight.length : 0}
+                      </div>
+                      <div className="text-gray-500">Sentences Analyzed</div>
+                    </div>
+                    <div className="text-center p-2 bg-gray-50 rounded">
+                      <div className="font-semibold text-gray-900">
+                        {selectedReport.ai_highlight ? selectedReport.ai_highlight.filter(h => h.ai).length : 0}
+                      </div>
+                      <div className="text-gray-500">AI-Flagged</div>
+                    </div>
+                    <div className="text-center p-2 bg-gray-50 rounded">
+                      <div className="font-semibold text-gray-900">
+                        {selectedReport.plagiarism_highlight ? selectedReport.plagiarism_highlight.length : 0}
+                      </div>
+                      <div className="text-gray-500">Plagiarism Matches</div>
+                    </div>
+                    <div className="text-center p-2 bg-gray-50 rounded">
+                      <div className="font-semibold text-gray-900">
+                        {formatDate(selectedReport.completed_at || selectedReport.created_at)}
+                      </div>
+                      <div className="text-gray-500">Completed</div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
