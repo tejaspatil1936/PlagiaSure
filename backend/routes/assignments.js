@@ -35,10 +35,14 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
     const file = req.file;
     const userId = req.user.id;
 
-    // Extract text from the uploaded file
-    const extractedText = await extractTextFromFile(file);
-    if (!extractedText) {
-      return res.status(400).json({ error: 'Failed to extract text from file' });
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    if (!studentName || !courseName || !assignmentTitle) {
+      return res.status(400).json({ 
+        error: 'Student name, course name, and assignment title are required' 
+      });
     }
 
     // Ensure user exists in users table (using admin client to bypass RLS)
@@ -98,7 +102,7 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
     // Extract text from file using the textExtractor utility
     let fileContent = '';
     try {
-      fileContent = await extractTextFromFile(file);
+      fileContent = await extractTextFromFile(file.buffer, file.mimetype);
       if (!fileContent) {
         console.error('Text extraction returned empty result');
         fileContent = '[Text extraction failed]';
@@ -121,7 +125,7 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
           file_path: fileName,
           file_size: file.size,
           file_type: file.mimetype,
-          extracted_text: extractedText,
+          extracted_text: fileContent,
           status: 'uploaded',
           created_at: new Date().toISOString()
         }
