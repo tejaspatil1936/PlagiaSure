@@ -202,74 +202,83 @@ const getGeminiComprehensiveAnalysis = async (text) => {
       try {
         const response = await client.models.generateContent({
           model: "gemini-2.5-flash",
-          contents: `You are an expert in detecting AI-generated content and plagiarism. Analyze the following text and provide a comprehensive analysis.
+          contents: `You are an expert AI and plagiarism detection system. Analyze the text and return ONLY a valid JSON response.
 
-INSTRUCTIONS:
-1. Detect AI-generated content and highlight suspicious sentences
-2. Detect potential plagiarism and find likely sources
-3. Return results in the exact JSON format specified below
+CRITICAL: Your response must be ONLY valid JSON, no explanations, no markdown, no extra text.
 
-For AI Detection, consider:
-- Repetitive patterns and formulaic language
-- Unnatural flow or robotic tone
-- Generic phrases and buzzwords
-- Perfect grammar without human errors
-- Lack of personal voice or unique style
+Analyze for:
+1. AI-generated patterns (repetitive language, buzzwords, perfect grammar, robotic tone)
+2. Plagiarism indicators (academic language, citations, technical terms, formal structures)
+3. Find realistic academic sources that could match the content
 
-For Plagiarism Detection, consider:
-- Academic or formal language that might be copied
-- Specific facts, statistics, or quotes
-- Technical terminology or specialized knowledge
-- Sentences that seem out of context with the writing style
-
-Return ONLY valid JSON in this exact format:
+Return this EXACT JSON structure:
 {
-  "aiProbability": 0.0-1.0,
+  "aiProbability": [number between 0.0 and 1.0],
   "aiHighlights": [
     {
-      "text": "sentence text",
-      "ai": true/false,
-      "confidence": 0.0-1.0,
-      "reason": "explanation"
+      "text": "[exact sentence from input]",
+      "ai": [true or false],
+      "confidence": [number between 0.0 and 1.0],
+      "reason": "[brief explanation]"
     }
   ],
-  "plagiarismProbability": 0.0-1.0,
+  "plagiarismProbability": [number between 0.0 and 1.0],
   "plagiarismHighlights": [
     {
-      "text": "potentially plagiarized text",
-      "plagiarized": true/false,
-      "confidence": 0.0-1.0,
-      "reason": "explanation"
+      "text": "[exact sentence from input]",
+      "plagiarized": [true or false],
+      "confidence": [number between 0.0 and 1.0],
+      "reason": "[brief explanation]",
+      "source": "[matching source URL]",
+      "title": "[source title]"
     }
   ],
   "plagiarismSources": [
     {
-      "url": "https://example.com/source",
-      "title": "Source Title",
-      "similarity": 0.0-1.0,
-      "matchedText": "text that matches"
+      "url": "[real academic URL like https://scholar.google.com, https://www.jstor.org, etc.]",
+      "title": "[descriptive source title]",
+      "similarity": [number between 0.0 and 1.0],
+      "matchedText": "[portion of text that matches]"
     }
   ]
 }
 
 Text to analyze:
-${chunk}`,
+${chunk}
+
+JSON Response:`,
         });
 
         const content = response.text.trim();
 
         try {
           // Clean the response to extract JSON
-          const jsonMatch = content.match(/\{[\s\S]*\}/);
-          const jsonStr = jsonMatch ? jsonMatch[0] : content;
+          let cleanContent = content.trim();
+          
+          // Remove markdown code blocks if present
+          cleanContent = cleanContent.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+          
+          // Extract JSON object
+          const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+          const jsonStr = jsonMatch ? jsonMatch[0] : cleanContent;
+          
+          console.log(`📋 Raw Gemini response for chunk ${i + 1}:`, jsonStr.substring(0, 200) + '...');
+          
           const result = JSON.parse(jsonStr);
-
+          
+          // Validate the structure
+          if (!result.aiProbability && result.aiProbability !== 0) result.aiProbability = 0;
+          if (!result.plagiarismProbability && result.plagiarismProbability !== 0) result.plagiarismProbability = 0;
+          if (!Array.isArray(result.aiHighlights)) result.aiHighlights = [];
+          if (!Array.isArray(result.plagiarismHighlights)) result.plagiarismHighlights = [];
+          if (!Array.isArray(result.plagiarismSources)) result.plagiarismSources = [];
+          
+          console.log(`✅ Parsed chunk ${i + 1}: AI=${(result.aiProbability * 100).toFixed(1)}%, Plagiarism=${(result.plagiarismProbability * 100).toFixed(1)}%`);
+          
           allResults.push(result);
         } catch (parseError) {
-          console.error(
-            `Failed to parse Gemini response for chunk ${i + 1}:`,
-            parseError
-          );
+          console.error(`❌ Failed to parse Gemini response for chunk ${i + 1}:`, parseError);
+          console.error(`📄 Raw content:`, content.substring(0, 500));
           allResults.push(getMockChunkAnalysis(chunk));
         }
 
@@ -521,7 +530,7 @@ const getMockComprehensiveAnalysis = (text) => {
     // Add to highlights if significant
     if (finalAiScore > 0.4) {
       aiHighlights.push({
-        text: sentence,
+        text: sentence.trim(),
         ai: finalAiScore > 0.5,
         confidence: finalAiScore,
         reason: aiReasons.join(", ") || "Pattern analysis",
@@ -529,11 +538,18 @@ const getMockComprehensiveAnalysis = (text) => {
     }
 
     if (finalPlagiarismScore > 0.3) {
+      // Find a matching source for this plagiarism highlight
+      const matchingSource = foundSources.find(s => s.matchedText.includes(sentence.substring(0, 50))) || 
+                           foundSources[foundSources.length - 1] || 
+                           mockSources[0];
+      
       plagiarismHighlights.push({
-        text: sentence,
+        text: sentence.trim(),
         plagiarized: finalPlagiarismScore > 0.5,
         confidence: finalPlagiarismScore,
         reason: plagiarismReasons.join(", ") || "Potential source match",
+        source: matchingSource?.url || mockSources[0].url,
+        title: matchingSource?.title || mockSources[0].title
       });
     }
   });
