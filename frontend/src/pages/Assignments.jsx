@@ -9,6 +9,7 @@ import {
   CheckCircle,
   AlertCircle,
   Plus,
+  ExternalLink,
 } from "lucide-react";
 import { formatDate, formatFileSize, cn } from "../lib/utils";
 
@@ -211,9 +212,21 @@ const Assignments = () => {
                       <div className="flex items-center">
                         <FileText className="h-5 w-5 text-gray-400 mr-3" />
                         <div>
-                          <p className="text-sm font-medium text-indigo-600 truncate">
+                          <button
+                            onClick={() => {
+                              const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gfvnmrcxnzauxkiqjmbq.supabase.co';
+                              const bucketName = 'Data';
+                              // Encode the file path to handle special characters
+                              const encodedFilePath = assignment.file_path.split('/').map(encodeURIComponent).join('/');
+                              const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${encodedFilePath}`;
+                              window.open(publicUrl, '_blank');
+                            }}
+                            className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline truncate text-left"
+                            title={`Open ${assignment.file_name}`}
+                          >
                             {assignment.assignment_title}
-                          </p>
+                            <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />
+                          </button>
                           <p className="text-sm text-gray-500">
                             Student: {assignment.student_name} • Course:{" "}
                             {assignment.course_name}
