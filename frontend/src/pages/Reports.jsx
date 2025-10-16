@@ -10,7 +10,8 @@ import {
   ExternalLink,
   Download,
   ArrowLeft,
-  Play
+  Play,
+  RefreshCw
 } from 'lucide-react';
 import { formatDate, getScoreColor, getScoreBgColor, cn } from '../lib/utils';
 
@@ -22,6 +23,7 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [generating, setGenerating] = useState({});
+  const [rechecking, setRechecking] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -72,6 +74,64 @@ const Reports = () => {
     }
   };
 
+  const recheckReport = async (assignmentId) => {
+    try {
+      setRechecking(true);
+      setError('');
+      
+      // Generate a new report for the same assignment
+      const response = await reportsAPI.generate(assignmentId);
+      console.log('Recheck started:', response.data);
+      
+      // Start polling for the new report
+      if (response.data.reportId) {
+        pollReportStatus(response.data.reportId);
+      }
+      
+    } catch (error) {
+      console.error('Failed to recheck report:', error);
+      setError(error.response?.data?.error || 'Failed to recheck report');
+    }
+  };
+
+  const pollReportStatus = async (reportId) => {
+    const maxAttempts = 30; // 5 minutes max
+    let attempts = 0;
+
+    const poll = async () => {
+      try {
+        attempts++;
+        const response = await reportsAPI.getById(reportId);
+        const report = response.data.report;
+
+        if (report.status === 'completed') {
+          setSelectedReport(report);
+          setRechecking(false);
+          setError(''); // Clear any previous errors
+          // You could add a success notification here if you have a notification system
+          return;
+        } else if (report.status === 'failed') {
+          setError("Recheck failed: " + (report.error_message || "Unknown error"));
+          setRechecking(false);
+          return;
+        } else if (attempts >= maxAttempts) {
+          setError("Recheck is taking longer than expected. Please refresh the page.");
+          setRechecking(false);
+          return;
+        }
+
+        // Continue polling
+        setTimeout(poll, 10000); // Poll every 10 seconds
+      } catch (error) {
+        console.error("Error polling report status:", error);
+        setRechecking(false);
+      }
+    };
+
+    // Start polling after a short delay
+    setTimeout(poll, 2000);
+  };
+
   const getReportForAssignment = (assignmentId) => {
     return reports.find(report => report.assignment_id === assignmentId);
   };
@@ -105,7 +165,23 @@ const Reports = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
+                  {selectedReport.status === 'completed' && (
+                    <button
+                      onClick={() => recheckReport(selectedReport.assignment_id)}
+                      disabled={rechecking}
+                      className={cn(
+                        "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md transition-colors",
+                        rechecking 
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                      )}
+                      title="Generate a new analysis report"
+                    >
+                      <RefreshCw className={cn("h-3 w-3 mr-1", rechecking && "animate-spin")} />
+                      {rechecking ? 'Rechecking...' : 'Recheck'}
+                    </button>
+                  )}
                   <span className={cn(
                     "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
                     (selectedReport.ai_probability > 0.7 || selectedReport.plagiarism_score > 0.3) && "bg-red-100 text-red-800",
@@ -123,12 +199,13 @@ const Reports = () => {
             </div>
 
             {/* Status and Progress */}
-            {selectedReport.status === 'processing' && (
+            {(selectedReport.status === 'processing' || rechecking) && (
               <div className="px-4 py-3 bg-blue-50 border-b border-gray-200">
                 <div className="flex items-center">
                   <Clock className="h-5 w-5 text-blue-500 animate-spin mr-2" />
                   <span className="text-sm text-blue-700">
-                    {selectedReport.progress_message || 'Generating report...'}
+                    {rechecking ? 'Rechecking and generating new analysis...' : 
+                     (selectedReport.progress_message || 'Generating report...')}
                   </span>
                 </div>
               </div>
@@ -317,18 +394,33 @@ const Reports = () => {
                             .filter(h => h.source === source)
                             .reduce((sum, h) => sum + (h.score || 0), 0) / matchCount;
                           
+                          const isValidUrl = (() => {
+                            try {
+                              new URL(source);
+                              return true;
+                            } catch {
+                              return false;
+                            }
+                          })();
+                          
                           return (
                             <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
                               <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                <a 
-                                  href={source} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-blue-600 hover:text-blue-800 truncate max-w-xs"
-                                >
-                                  {new URL(source).hostname}
-                                </a>
+                                {isValidUrl ? (
+                                  <a 
+                                    href={source} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-blue-600 hover:text-blue-800 truncate max-w-xs"
+                                  >
+                                    {new URL(source).hostname}
+                                  </a>
+                                ) : (
+                                  <span className="text-sm text-gray-600 truncate max-w-xs" title={source}>
+                                    {source.length > 25 ? source.substring(0, 25) + '...' : source}
+                                  </span>
+                                )}
                               </div>
                               <div className="flex items-center space-x-2">
                                 <span className="text-xs text-gray-600">{matchCount} matches</span>
@@ -366,17 +458,33 @@ const Reports = () => {
                             {/* Source Information */}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-3">
-                                <a 
-                                  href={highlight.source} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 bg-white px-2 py-1 rounded border border-blue-200 hover:border-blue-300 transition-colors"
-                                >
-                                  <ExternalLink className="h-3 w-3 mr-1" />
-                                  <span className="max-w-xs truncate">
-                                    {highlight.title || new URL(highlight.source).hostname}
-                                  </span>
-                                </a>
+                                {(() => {
+                                  try {
+                                    const url = new URL(highlight.source);
+                                    return (
+                                      <a 
+                                        href={highlight.source} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 bg-white px-2 py-1 rounded border border-blue-200 hover:border-blue-300 transition-colors"
+                                      >
+                                        <ExternalLink className="h-3 w-3 mr-1" />
+                                        <span className="max-w-xs truncate">
+                                          {highlight.title || url.hostname}
+                                        </span>
+                                      </a>
+                                    );
+                                  } catch {
+                                    return (
+                                      <div className="inline-flex items-center text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                                        <FileText className="h-3 w-3 mr-1" />
+                                        <span className="max-w-xs truncate">
+                                          {highlight.title || 'Academic Source'}
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+                                })()}
                                 {highlight.matchedPatterns && highlight.matchedPatterns.length > 0 && (
                                   <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
                                     Pattern: {highlight.matchedPatterns[0]}

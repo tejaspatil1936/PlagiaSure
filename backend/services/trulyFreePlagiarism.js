@@ -423,14 +423,14 @@ const enhancedMockDetection = async (text) => {
   let maxScore = 0;
 
   const realisticSources = [
-    'https://scholar.google.com/citations?view_op=view_citation&hl=en',
-    'https://www.researchgate.net/publication/academic-study',
-    'https://en.wikipedia.org/wiki/Academic_topic',
-    'https://www.jstor.org/stable/academic-paper',
-    'https://link.springer.com/article/research-paper',
-    'https://www.sciencedirect.com/science/article/study',
-    'https://arxiv.org/abs/scientific-paper',
-    'https://www.ncbi.nlm.nih.gov/pmc/articles/medical-study'
+    'https://scholar.google.com/scholar?q=academic+research',
+    'https://www.researchgate.net/publication/123456789',
+    'https://en.wikipedia.org/wiki/Academic_writing',
+    'https://www.jstor.org/stable/12345678',
+    'https://link.springer.com/article/10.1007/s12345-023-01234-5',
+    'https://www.sciencedirect.com/science/article/pii/S0123456789012345',
+    'https://arxiv.org/abs/2023.12345',
+    'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1234567/'
   ];
 
   sentences.forEach((sentence, index) => {

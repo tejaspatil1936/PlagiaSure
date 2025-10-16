@@ -33,16 +33,16 @@ const enhancedMockPlagiarismDetection = async (text) => {
 
   // Realistic academic sources for mock results
   const academicSources = [
-    'https://www.jstor.org/stable/academic-research-paper-2024',
-    'https://link.springer.com/article/10.1007/educational-study-2023',
-    'https://www.sciencedirect.com/science/article/pii/research-findings-2024',
-    'https://scholar.google.com/citations?view_op=view_citation&hl=en&user=researcher',
-    'https://www.researchgate.net/publication/academic-publication-2023',
-    'https://arxiv.org/abs/2024.educational-research',
-    'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC-educational-study/',
-    'https://ieeexplore.ieee.org/document/educational-technology-2024',
-    'https://en.wikipedia.org/wiki/Educational_methodology',
-    'https://www.tandfonline.com/doi/full/educational-research-2024'
+    'https://www.jstor.org/stable/12345678',
+    'https://link.springer.com/article/10.1007/s12345-023-01234-5',
+    'https://www.sciencedirect.com/science/article/pii/S0123456789012345',
+    'https://scholar.google.com/scholar?q=academic+research',
+    'https://www.researchgate.net/publication/123456789',
+    'https://arxiv.org/abs/2023.12345',
+    'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1234567/',
+    'https://ieeexplore.ieee.org/document/1234567',
+    'https://en.wikipedia.org/wiki/Academic_writing',
+    'https://www.tandfonline.com/doi/full/10.1080/12345678.2023.1234567'
   ];
 
   // Enhanced detection patterns
