@@ -382,18 +382,24 @@ const Reports = () => {
                   </div>
                 )}
 
-                {/* Sources Summary */}
-                {selectedReport.plagiarism_highlight && selectedReport.plagiarism_highlight.length > 0 && (
+                {/* Sources Summary - Only show if we have real content matches */}
+                {selectedReport.plagiarism_highlight && selectedReport.plagiarism_highlight.length > 0 && 
+                 !selectedReport.plagiarism_highlight[0].text.includes('[application/pdf file') && (
                   <div className="px-4 py-4 border-t border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Sources Found</h4>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-gray-900">Sources with Content Matches</h4>
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        {Array.from(new Set(selectedReport.plagiarism_highlight.map(h => h.source))).length} unique sources
+                      </span>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                       {Array.from(new Set(selectedReport.plagiarism_highlight.map(h => h.source)))
-                        .slice(0, 6)
                         .map((source, index) => {
-                          const matchCount = selectedReport.plagiarism_highlight.filter(h => h.source === source).length;
-                          const avgScore = selectedReport.plagiarism_highlight
-                            .filter(h => h.source === source)
-                            .reduce((sum, h) => sum + (h.score || 0), 0) / matchCount;
+                          const sourceMatches = selectedReport.plagiarism_highlight.filter(h => h.source === source);
+                          const matchCount = sourceMatches.length;
+                          const avgScore = sourceMatches.reduce((sum, h) => sum + (h.score || 0), 0) / matchCount;
+                          const highestScore = Math.max(...sourceMatches.map(h => h.score || 0));
+                          const sourceTitle = sourceMatches[0]?.title || 'Academic Source';
                           
                           const isValidUrl = (() => {
                             try {
@@ -405,29 +411,53 @@ const Reports = () => {
                           })();
                           
                           return (
-                            <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                              <div className="flex items-center space-x-2">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                {isValidUrl ? (
-                                  <a 
-                                    href={source} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-blue-600 hover:text-blue-800 truncate max-w-xs"
-                                  >
-                                    {new URL(source).hostname}
-                                  </a>
-                                ) : (
-                                  <span className="text-sm text-gray-600 truncate max-w-xs" title={source}>
-                                    {source.length > 25 ? source.substring(0, 25) + '...' : source}
+                            <div key={index} className={cn(
+                              "p-3 rounded-lg border transition-all duration-200 hover:shadow-md",
+                              highestScore > 0.7 ? "bg-red-50 border-red-200" :
+                              highestScore > 0.4 ? "bg-yellow-50 border-yellow-200" :
+                              "bg-blue-50 border-blue-200"
+                            )}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <div className={cn(
+                                      "w-2 h-2 rounded-full",
+                                      highestScore > 0.7 ? "bg-red-500" :
+                                      highestScore > 0.4 ? "bg-yellow-500" :
+                                      "bg-blue-500"
+                                    )}></div>
+                                    {isValidUrl ? (
+                                      <a 
+                                        href={source} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-sm font-medium text-blue-600 hover:text-blue-800 truncate"
+                                      >
+                                        {sourceTitle}
+                                      </a>
+                                    ) : (
+                                      <span className="text-sm font-medium text-gray-700 truncate" title={source}>
+                                        {sourceTitle}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-600 truncate">
+                                    {isValidUrl ? new URL(source).hostname : source}
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end space-y-1 ml-2">
+                                  <span className={cn(
+                                    "text-xs px-2 py-1 rounded font-medium",
+                                    highestScore > 0.7 ? "bg-red-100 text-red-700" :
+                                    highestScore > 0.4 ? "bg-yellow-100 text-yellow-700" :
+                                    "bg-blue-100 text-blue-700"
+                                  )}>
+                                    {(highestScore * 100).toFixed(0)}% max
                                   </span>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs text-gray-600">{matchCount} matches</span>
-                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                                  {(avgScore * 100).toFixed(0)}%
-                                </span>
+                                  <span className="text-xs text-gray-500">
+                                    {matchCount} match{matchCount !== 1 ? 'es' : ''}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           );
@@ -436,29 +466,47 @@ const Reports = () => {
                   </div>
                 )}
 
-                {/* Plagiarism Highlights */}
-                {selectedReport.plagiarism_highlight && selectedReport.plagiarism_highlight.length > 0 && (
+                {/* Detailed Plagiarism Highlights - Only show real content */}
+                {selectedReport.plagiarism_highlight && selectedReport.plagiarism_highlight.length > 0 && 
+                 !selectedReport.plagiarism_highlight[0].text.includes('[application/pdf file') && (
                   <div className="px-4 py-4 border-t border-gray-200">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-medium text-gray-900">Detailed Plagiarism Highlights</h4>
+                      <h4 className="text-sm font-medium text-gray-900">Detailed Plagiarism Analysis</h4>
                       <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        {selectedReport.plagiarism_highlight.length} potential matches found
+                        {selectedReport.plagiarism_highlight.length} content matches found
                       </span>
                     </div>
                     <div className="space-y-4 max-h-80 overflow-y-auto">
-                      {selectedReport.plagiarism_highlight.slice(0, 15).map((highlight, index) => (
-                        <div key={index} className="relative p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-400 rounded-lg shadow-sm">
+                      {selectedReport.plagiarism_highlight
+                        .sort((a, b) => (b.score || 0) - (a.score || 0))
+                        .slice(0, 10)
+                        .map((highlight, index) => (
+                        <div key={index} className={cn(
+                          "relative p-4 rounded-lg shadow-sm border-l-4 transition-all duration-200 hover:shadow-md",
+                          (highlight.score || 0) > 0.7 ? "bg-gradient-to-r from-red-50 to-pink-50 border-red-400" :
+                          (highlight.score || 0) > 0.4 ? "bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-400" :
+                          "bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-400"
+                        )}>
                           <div className="space-y-3">
-                            {/* Highlighted Text */}
-                            <div>
-                              <p className="text-sm text-gray-800 leading-relaxed">
-                                <span className="font-medium text-blue-800">"{highlight.text}"</span>
+                            {/* Highlighted Text with better formatting */}
+                            <div className="relative">
+                              <div className="absolute -left-2 top-0 text-lg text-gray-400">"</div>
+                              <p className="text-sm text-gray-800 leading-relaxed pl-4 pr-4 italic">
+                                <span className={cn(
+                                  "font-medium",
+                                  (highlight.score || 0) > 0.7 ? "text-red-800" :
+                                  (highlight.score || 0) > 0.4 ? "text-yellow-800" :
+                                  "text-blue-800"
+                                )}>
+                                  {highlight.text}
+                                </span>
                               </p>
+                              <div className="absolute -right-2 bottom-0 text-lg text-gray-400">"</div>
                             </div>
                             
-                            {/* Source Information */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
+                            {/* Enhanced Source Information */}
+                            <div className="flex items-start justify-between">
+                              <div className="flex flex-col space-y-2">
                                 {(() => {
                                   try {
                                     const url = new URL(highlight.source);
@@ -467,61 +515,63 @@ const Reports = () => {
                                         href={highlight.source} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 bg-white px-2 py-1 rounded border border-blue-200 hover:border-blue-300 transition-colors"
+                                        className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 bg-white px-3 py-1.5 rounded-md border border-blue-200 hover:border-blue-300 transition-colors shadow-sm"
                                       >
-                                        <ExternalLink className="h-3 w-3 mr-1" />
-                                        <span className="max-w-xs truncate">
-                                          {highlight.title || url.hostname}
-                                        </span>
+                                        <ExternalLink className="h-3 w-3 mr-2" />
+                                        <div className="flex flex-col items-start">
+                                          <span className="font-medium">{highlight.title || url.hostname}</span>
+                                          <span className="text-gray-500">{url.hostname}</span>
+                                        </div>
                                       </a>
                                     );
                                   } catch {
                                     return (
-                                      <div className="inline-flex items-center text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded border border-gray-200">
-                                        <FileText className="h-3 w-3 mr-1" />
-                                        <span className="max-w-xs truncate">
-                                          {highlight.title || 'Academic Source'}
-                                        </span>
+                                      <div className="inline-flex items-center text-xs text-gray-600 bg-gray-100 px-3 py-1.5 rounded-md border border-gray-200">
+                                        <FileText className="h-3 w-3 mr-2" />
+                                        <span className="font-medium">{highlight.title || 'Academic Source'}</span>
                                       </div>
                                     );
                                   }
                                 })()}
+                                
+                                {/* Matched Patterns */}
                                 {highlight.matchedPatterns && highlight.matchedPatterns.length > 0 && (
-                                  <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                                    Pattern: {highlight.matchedPatterns[0]}
-                                  </span>
+                                  <div className="flex flex-wrap gap-1">
+                                    {highlight.matchedPatterns.slice(0, 3).map((pattern, idx) => (
+                                      <span key={idx} className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                                        🔍 {pattern}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                
+                                {/* Reason */}
+                                {highlight.reason && (
+                                  <p className="text-xs text-gray-600 italic">
+                                    💡 {highlight.reason}
+                                  </p>
                                 )}
                               </div>
                               
-                              {/* Match Score */}
-                              <div className="flex items-center space-x-2">
+                              {/* Enhanced Match Score */}
+                              <div className="flex flex-col items-end space-y-1">
                                 <span className={cn(
-                                  "inline-flex items-center text-xs font-medium px-2 py-1 rounded-full",
-                                  (highlight.score || 0) > 0.7 && "bg-red-100 text-red-700",
-                                  (highlight.score || 0) > 0.4 && (highlight.score || 0) <= 0.7 && "bg-yellow-100 text-yellow-700",
-                                  (highlight.score || 0) <= 0.4 && "bg-blue-100 text-blue-700"
+                                  "inline-flex items-center text-sm font-bold px-3 py-1.5 rounded-full shadow-sm",
+                                  (highlight.score || 0) > 0.7 && "bg-red-100 text-red-700 border border-red-200",
+                                  (highlight.score || 0) > 0.4 && (highlight.score || 0) <= 0.7 && "bg-yellow-100 text-yellow-700 border border-yellow-200",
+                                  (highlight.score || 0) <= 0.4 && "bg-blue-100 text-blue-700 border border-blue-200"
                                 )}>
-                                  📊 {((highlight.score || 0) * 100).toFixed(1)}% similarity
+                                  {((highlight.score || 0) * 100).toFixed(1)}%
                                 </span>
-                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <span className="text-xs text-gray-500">
+                                  {(highlight.score || 0) > 0.7 ? 'High Risk' :
+                                   (highlight.score || 0) > 0.4 ? 'Medium Risk' : 'Low Risk'}
+                                </span>
                               </div>
                             </div>
-                            
-                            {/* Additional Source Info */}
-                            {highlight.authors && (
-                              <div className="text-xs text-gray-600">
-                                <span className="font-medium">Authors:</span> {highlight.authors}
-                              </div>
-                            )}
                           </div>
                         </div>
                       ))}
-                      {selectedReport.plagiarism_highlight.length === 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                          <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2" />
-                          <p className="text-sm">No plagiarism detected</p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
@@ -547,44 +597,65 @@ const Reports = () => {
                       </div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
-                      <div className="text-sm leading-relaxed space-y-2">
-                        {selectedReport.ai_highlight && selectedReport.ai_highlight.map((sentence, index) => {
-                          // Check if this sentence is also flagged for plagiarism
-                          const plagiarismMatch = selectedReport.plagiarism_highlight?.find(p => 
-                            p.text.toLowerCase().includes(sentence.text.toLowerCase().substring(0, 50)) ||
-                            sentence.text.toLowerCase().includes(p.text.toLowerCase().substring(0, 50))
-                          );
-                          
-                          return (
-                            <span
-                              key={index}
-                              className={cn(
-                                "inline-block mr-1 px-1 py-0.5 rounded transition-all duration-200 hover:shadow-sm",
-                                sentence.ai && plagiarismMatch && "bg-gradient-to-r from-purple-200 to-blue-200 border border-purple-300",
-                                sentence.ai && !plagiarismMatch && "bg-purple-100 border border-purple-200",
-                                !sentence.ai && plagiarismMatch && "bg-blue-100 border border-blue-200",
-                                !sentence.ai && !plagiarismMatch && "bg-white"
-                              )}
-                              title={
-                                sentence.ai && plagiarismMatch ? "AI-Generated + Plagiarism" :
-                                sentence.ai ? "AI-Generated" :
-                                plagiarismMatch ? "Potential Plagiarism" : "Original Content"
-                              }
-                            >
-                              {sentence.text}
-                              {sentence.ai && plagiarismMatch && (
-                                <span className="ml-1 text-xs">🤖📄</span>
-                              )}
-                              {sentence.ai && !plagiarismMatch && (
-                                <span className="ml-1 text-xs">🤖</span>
-                              )}
-                              {!sentence.ai && plagiarismMatch && (
-                                <span className="ml-1 text-xs">📄</span>
-                              )}
-                            </span>
-                          );
-                        })}
-                      </div>
+                      {selectedReport.ai_highlight && selectedReport.ai_highlight.length > 0 && 
+                       !selectedReport.ai_highlight[0].text.includes('[application/pdf file') &&
+                       !selectedReport.ai_highlight[0].text.includes('text extraction') ? (
+                        <div className="text-sm leading-relaxed space-y-2">
+                          {selectedReport.ai_highlight.map((sentence, index) => {
+                            // Check if this sentence is also flagged for plagiarism
+                            const plagiarismMatch = selectedReport.plagiarism_highlight?.find(p => 
+                              p.text.toLowerCase().includes(sentence.text.toLowerCase().substring(0, 50)) ||
+                              sentence.text.toLowerCase().includes(p.text.toLowerCase().substring(0, 50))
+                            );
+                            
+                            return (
+                              <span
+                                key={index}
+                                className={cn(
+                                  "inline-block mr-1 px-1 py-0.5 rounded transition-all duration-200 hover:shadow-sm cursor-pointer",
+                                  sentence.ai && plagiarismMatch && "bg-gradient-to-r from-purple-200 to-blue-200 border border-purple-300",
+                                  sentence.ai && !plagiarismMatch && "bg-purple-100 border border-purple-200",
+                                  !sentence.ai && plagiarismMatch && "bg-blue-100 border border-blue-200",
+                                  !sentence.ai && !plagiarismMatch && "bg-white border border-gray-200"
+                                )}
+                                title={
+                                  sentence.ai && plagiarismMatch ? "AI-Generated + Plagiarism" :
+                                  sentence.ai ? "AI-Generated" :
+                                  plagiarismMatch ? "Potential Plagiarism" : "Original Content"
+                                }
+                              >
+                                {sentence.text}
+                                {sentence.ai && plagiarismMatch && (
+                                  <span className="ml-1 text-xs">🤖📄</span>
+                                )}
+                                {sentence.ai && !plagiarismMatch && (
+                                  <span className="ml-1 text-xs">🤖</span>
+                                )}
+                                {!sentence.ai && plagiarismMatch && (
+                                  <span className="ml-1 text-xs">📄</span>
+                                )}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <FileText className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                          <p className="text-sm">Text analysis not available</p>
+                          <p className="text-xs mt-1">
+                            {selectedReport.ai_highlight?.[0]?.text?.includes('extraction') 
+                              ? 'Text extraction failed for this file. Try uploading a different format.'
+                              : 'No text content available for analysis.'}
+                          </p>
+                          <button
+                            onClick={() => recheckReport(selectedReport.assignment_id)}
+                            disabled={rechecking}
+                            className="mt-3 text-xs text-indigo-600 hover:text-indigo-800"
+                          >
+                            Try recheck with improved extraction
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

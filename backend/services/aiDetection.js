@@ -290,22 +290,93 @@ const getMockAIProbability = (text) => {
   return Math.min(0.95, score);
 };
 
-// Mock sentence highlights for demo purposes
+// Enhanced mock sentence highlights with realistic AI detection patterns
 const getMockSentenceHighlights = (text) => {
-  const sentences = splitIntoSentences(text);
+  console.log("🤖 Analyzing sentences for AI patterns...");
 
-  return sentences.map((sentence) => {
+  const sentences = splitIntoSentences(text);
+  console.log(`📝 Analyzing ${sentences.length} sentences`);
+
+  // AI indicators with different confidence levels
+  const aiPatterns = [
+    {
+      patterns: ["furthermore", "moreover", "additionally"],
+      confidence: 0.8,
+      reason: "Formal transitional phrases",
+    },
+    {
+      patterns: ["comprehensive", "multifaceted", "paradigm"],
+      confidence: 0.7,
+      reason: "Academic buzzwords",
+    },
+    {
+      patterns: ["it is important to note", "it should be noted"],
+      confidence: 0.9,
+      reason: "AI qualifying phrases",
+    },
+    {
+      patterns: ["leverage", "utilize", "optimize"],
+      confidence: 0.6,
+      reason: "Business jargon",
+    },
+    {
+      patterns: ["in conclusion", "to summarize", "in summary"],
+      confidence: 0.5,
+      reason: "Conclusion patterns",
+    },
+    {
+      patterns: ["according to", "research indicates", "studies show"],
+      confidence: 0.4,
+      reason: "Citation patterns",
+    },
+  ];
+
+  const results = sentences.map((sentence, index) => {
     const lowerSentence = sentence.toLowerCase();
-    const isAI =
-      lowerSentence.includes("furthermore") ||
-      lowerSentence.includes("moreover") ||
-      lowerSentence.includes("comprehensive") ||
-      lowerSentence.includes("utilize") ||
-      Math.random() > 0.8; // Random 20% chance for demo
+    let aiScore = 0;
+    let matchedPatterns = [];
+    let reasons = [];
+
+    // Check for AI patterns
+    aiPatterns.forEach((patternGroup) => {
+      patternGroup.patterns.forEach((pattern) => {
+        if (lowerSentence.includes(pattern)) {
+          aiScore += patternGroup.confidence;
+          matchedPatterns.push(pattern);
+          reasons.push(patternGroup.reason);
+        }
+      });
+    });
+
+    // Length and complexity factors
+    if (sentence.length > 120) aiScore += 0.2; // Very long sentences
+    if (sentence.length > 200) aiScore += 0.3; // Extremely long sentences
+
+    // Perfect grammar indicators (no contractions, formal structure)
+    if (!lowerSentence.includes("'") && sentence.includes(",")) aiScore += 0.1;
+
+    // Multiple clauses
+    const clauseCount = (sentence.match(/,|;|:|that|which|where|when/g) || [])
+      .length;
+    if (clauseCount > 3) aiScore += 0.2;
+
+    // Normalize score
+    const finalScore = Math.min(1.0, aiScore);
+    const isAI = finalScore > 0.5;
 
     return {
       text: sentence,
       ai: isAI,
+      confidence: finalScore,
+      matchedPatterns: matchedPatterns,
+      reasons: reasons,
     };
   });
+
+  const aiCount = results.filter((r) => r.ai).length;
+  console.log(
+    `🤖 Identified ${aiCount}/${sentences.length} sentences as potentially AI-generated`
+  );
+
+  return results;
 };
