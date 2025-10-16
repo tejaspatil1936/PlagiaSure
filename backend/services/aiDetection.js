@@ -1,20 +1,42 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import axios from 'axios';
-import { splitIntoSentences } from '../utils/textExtractor.js';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { InferenceClient } from "@huggingface/inference";
+import { splitIntoSentences } from "../utils/textExtractor.js";
 
 let genAI = null;
+let hfClient = null;
 
 // Initialize Gemini client only when needed and API key is available
 const getGeminiClient = () => {
-  if (!genAI && process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here') {
+  if (
+    !genAI &&
+    process.env.GEMINI_API_KEY &&
+    process.env.GEMINI_API_KEY !== "your_gemini_api_key_here"
+  ) {
     try {
       genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     } catch (error) {
-      console.error('Failed to initialize Gemini client:', error);
+      console.error("Failed to initialize Gemini client:", error);
       return null;
     }
   }
   return genAI;
+};
+
+// Initialize Hugging Face client only when needed and API key is available
+const getHuggingFaceClient = () => {
+  if (
+    !hfClient &&
+    process.env.HUGGINGFACE_API_KEY &&
+    process.env.HUGGINGFACE_API_KEY !== "your_huggingface_api_key_here"
+  ) {
+    try {
+      hfClient = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
+    } catch (error) {
+      console.error("Failed to initialize Hugging Face client:", error);
+      return null;
+    }
+  }
+  return hfClient;
 };
 
 export const detectAIContent = async (text) => {
@@ -22,37 +44,42 @@ export const detectAIContent = async (text) => {
     // Run both detection methods in parallel
     const [overallProbability, sentenceHighlights] = await Promise.allSettled([
       getOverallAIProbability(text),
-      getSentenceAIHighlights(text)
+      getSentenceAIHighlights(text),
     ]);
 
     let probability = 0;
     let highlight = [];
 
-    if (overallProbability.status === 'fulfilled') {
+    if (overallProbability.status === "fulfilled") {
       probability = overallProbability.value;
     } else {
-      console.error('Overall AI probability detection failed:', overallProbability.reason);
+      console.error(
+        "Overall AI probability detection failed:",
+        overallProbability.reason
+      );
     }
 
-    if (sentenceHighlights.status === 'fulfilled') {
+    if (sentenceHighlights.status === "fulfilled") {
       highlight = sentenceHighlights.value;
     } else {
-      console.error('Sentence AI highlighting failed:', sentenceHighlights.reason);
+      console.error(
+        "Sentence AI highlighting failed:",
+        sentenceHighlights.reason
+      );
       // Fallback: create highlights based on overall probability
       const sentences = splitIntoSentences(text);
-      highlight = sentences.map(sentence => ({
+      highlight = sentences.map((sentence) => ({
         text: sentence,
-        ai: probability > 0.5
+        ai: probability > 0.5,
       }));
     }
 
     return {
       probability,
-      highlight
+      highlight,
     };
-
   } catch (error) {
-    console.error('AI detection error:', error);
+    console.error("AI detection error:", error);
     throw new Error(`AI detection failed: ${error.message}`);
   }
 };
@@ -60,40 +87,61 @@ export const detectAIContent = async (text) => {
 // Get overall AI probability using Hugging Face model (fallback to Gemini)
 const getOverallAIProbability = async (text) => {
   try {
-    // Try Hugging Face first if available
-    if (process.env.HUGGINGFACE_API_KEY && process.env.HUGGINGFACE_API_KEY !== 'your_huggingface_api_key_here') {
+    // Try Hugging Face Inference Client first if available
+    const client = getHuggingFaceClient();
+    if (client) {
       try {
-        const response = await axios.post(
-          'https://api-inference.huggingface.co/models/roberta-base-openai-detector',
-          { inputs: text },
-          {
-            headers: {
-              'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            timeout: 30000
-          }
-        );
+        console.log("Using Hugging Face Inference Client for AI detection...");
 
-        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-          const aiLabel = response.data[0].find(item => 
-            item.label === 'GENERATED' || item.label === 'AI' || item.label === 'FAKE'
+        // Truncate text if too long (model has limits)
+        const truncatedText =
+          text.length > 3000 ? text.substring(0, 3000) : text;
+
+        const output = await client.textClassification({
+          model: "openai-community/roberta-base-openai-detector",
+          inputs: truncatedText,
+        });
+
+        if (output && Array.isArray(output)) {
+          // Look for "Fake" label (AI-generated) or "GENERATED"
+          const aiLabel = output.find(
+            (item) =>
+              item.label === "Fake" ||
+              item.label === "GENERATED" ||
+              item.label === "AI"
           );
-          
+
           if (aiLabel) {
+            console.log(
+              `Hugging Face AI probability: ${(aiLabel.score * 100).toFixed(
+                1
+              )}%`
+            );
             return aiLabel.score;
+          }
+
+          // If no "Fake" label, check for "Real" and invert
+          const realLabel = output.find((item) => item.label === "Real");
+          if (realLabel) {
+            const aiProbability = 1 - realLabel.score;
+            console.log(
+              `Hugging Face AI probability (inverted): ${(
+                aiProbability * 100
+              ).toFixed(1)}%`
+            );
+            return aiProbability;
           }
         }
       } catch (hfError) {
-        console.error('Hugging Face API error:', hfError);
+        console.error("Hugging Face Inference Client error:", hfError);
       }
     }
 
     // Fallback to Gemini-based detection
+    console.log("Falling back to Gemini for AI detection...");
     return await getGeminiFallbackProbability(text);
-
   } catch (error) {
-    console.error('Overall AI probability error:', error);
+    console.error("Overall AI probability error:", error);
     return 0.1; // Default low probability
   }
 };
@@ -103,12 +151,12 @@ const getGeminiFallbackProbability = async (text) => {
   try {
     const client = getGeminiClient();
     if (!client) {
-      console.warn('Gemini API key not configured, returning mock probability');
+      console.warn("Gemini API key not configured, returning mock probability");
       return getMockAIProbability(text);
     }
 
-    const model = client.getGenerativeModel({ model: 'gemini-pro' });
-    
+    const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+
     const prompt = `Analyze the following text and determine the probability (0.0 to 1.0) that it was generated by AI. 
     Consider factors like:
     - Repetitive patterns
@@ -125,13 +173,12 @@ const getGeminiFallbackProbability = async (text) => {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const probabilityStr = response.text().trim();
-    
-    const probability = parseFloat(probabilityStr);
-    
-    return isNaN(probability) ? 0.1 : Math.max(0, Math.min(1, probability));
 
+    const probability = parseFloat(probabilityStr);
+
+    return isNaN(probability) ? 0.1 : Math.max(0, Math.min(1, probability));
   } catch (error) {
-    console.error('Gemini fallback error:', error);
+    console.error("Gemini fallback error:", error);
     return getMockAIProbability(text);
   }
 };
@@ -141,7 +188,7 @@ const getSentenceAIHighlights = async (text) => {
   try {
     const client = getGeminiClient();
     if (!client) {
-      console.warn('Gemini API key not configured for sentence highlighting');
+      console.warn("Gemini API key not configured for sentence highlighting");
       return getMockSentenceHighlights(text);
     }
 
@@ -152,57 +199,61 @@ const getSentenceAIHighlights = async (text) => {
     const batchSize = 5;
     for (let i = 0; i < sentences.length; i += batchSize) {
       const batch = sentences.slice(i, i + batchSize);
-      
+
       try {
-        const model = client.getGenerativeModel({ model: 'gemini-pro' });
-        
+        const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+
         const prompt = `Analyze each sentence and determine if it was likely generated by AI. 
         Return a JSON array with objects containing "text" and "ai" (boolean) fields.
         Be conservative - only mark as AI if you are confident.
         
         Sentences to analyze:
-        ${batch.map((s, idx) => `${idx + 1}. ${s}`).join('\n')}
+        ${batch.map((s, idx) => `${idx + 1}. ${s}`).join("\n")}
         
         Return ONLY valid JSON, no explanation:`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const content = response.text().trim();
-        
+
         try {
           // Clean the response to extract JSON
           const jsonMatch = content.match(/\[[\s\S]*\]/);
           const jsonStr = jsonMatch ? jsonMatch[0] : content;
           const batchResults = JSON.parse(jsonStr);
-          
+
           if (Array.isArray(batchResults)) {
             highlights.push(...batchResults);
           } else {
             // Fallback: mark all as not AI
-            highlights.push(...batch.map(sentence => ({ text: sentence, ai: false })));
+            highlights.push(
+              ...batch.map((sentence) => ({ text: sentence, ai: false }))
+            );
           }
         } catch (parseError) {
-          console.error('Failed to parse Gemini response:', parseError);
+          console.error("Failed to parse Gemini response:", parseError);
           // Fallback: mark all as not AI
-          highlights.push(...batch.map(sentence => ({ text: sentence, ai: false })));
+          highlights.push(
+            ...batch.map((sentence) => ({ text: sentence, ai: false }))
+          );
         }
 
         // Add delay between batches to respect rate limits
         if (i + batchSize < sentences.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
-
       } catch (batchError) {
-        console.error('Batch processing error:', batchError);
+        console.error("Batch processing error:", batchError);
         // Fallback: mark all as not AI
-        highlights.push(...batch.map(sentence => ({ text: sentence, ai: false })));
+        highlights.push(
+          ...batch.map((sentence) => ({ text: sentence, ai: false }))
+        );
       }
     }
 
     return highlights;
-
   } catch (error) {
-    console.error('Sentence highlighting error:', error);
+    console.error("Sentence highlighting error:", error);
     return getMockSentenceHighlights(text);
   }
 };
@@ -211,41 +262,53 @@ const getSentenceAIHighlights = async (text) => {
 const getMockAIProbability = (text) => {
   // Simple heuristic-based mock detection
   const aiIndicators = [
-    'furthermore', 'moreover', 'in conclusion', 'it is important to note',
-    'as an ai', 'i am an ai', 'as a language model', 'i cannot', 'i apologize',
-    'comprehensive', 'multifaceted', 'paradigm', 'leverage', 'utilize'
+    "furthermore",
+    "moreover",
+    "in conclusion",
+    "it is important to note",
+    "as an ai",
+    "i am an ai",
+    "as a language model",
+    "i cannot",
+    "i apologize",
+    "comprehensive",
+    "multifaceted",
+    "paradigm",
+    "leverage",
+    "utilize",
   ];
-  
+
   const lowerText = text.toLowerCase();
   let score = 0;
-  
-  aiIndicators.forEach(indicator => {
+
+  aiIndicators.forEach((indicator) => {
     if (lowerText.includes(indicator)) {
       score += 0.15;
     }
   });
-  
+
   // Add some randomness for demo
   score += Math.random() * 0.3;
-  
+
   return Math.min(0.95, score);
 };
 
 // Mock sentence highlights for demo purposes
 const getMockSentenceHighlights = (text) => {
   const sentences = splitIntoSentences(text);
-  
-  return sentences.map(sentence => {
+
+  return sentences.map((sentence) => {
     const lowerSentence = sentence.toLowerCase();
-    const isAI = lowerSentence.includes('furthermore') || 
-                 lowerSentence.includes('moreover') ||
-                 lowerSentence.includes('comprehensive') ||
-                 lowerSentence.includes('utilize') ||
-                 Math.random() > 0.8; // Random 20% chance for demo
-    
+    const isAI =
+      lowerSentence.includes("furthermore") ||
+      lowerSentence.includes("moreover") ||
+      lowerSentence.includes("comprehensive") ||
+      lowerSentence.includes("utilize") ||
+      Math.random() > 0.8; // Random 20% chance for demo
+
     return {
       text: sentence,
-      ai: isAI
+      ai: isAI,
     };
   });
 };
