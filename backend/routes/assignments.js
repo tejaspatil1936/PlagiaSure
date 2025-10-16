@@ -35,6 +35,12 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
     const file = req.file;
     const userId = req.user.id;
 
+    // Extract text from the uploaded file
+    const extractedText = await extractTextFromFile(file);
+    if (!extractedText) {
+      return res.status(400).json({ error: 'Failed to extract text from file' });
+    }
+
     // Ensure user exists in users table (using admin client to bypass RLS)
     const { data: existingUser, error: userCheckError } = await supabaseAdmin
       .from('users')
@@ -89,18 +95,17 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
       return res.status(500).json({ error: 'Failed to upload file' });
     }
 
-    // Extract text from file (simplified for now)
-    let extractedText = '';
+    // Extract text from file using the textExtractor utility
+    let fileContent = '';
     try {
-      if (file.mimetype === 'text/plain') {
-        extractedText = file.buffer.toString('utf-8');
-      } else {
-        // For PDF/DOCX, we'll add a placeholder for now
-        extractedText = `[${file.mimetype} file - text extraction pending]`;
+      fileContent = await extractTextFromFile(file);
+      if (!fileContent) {
+        console.error('Text extraction returned empty result');
+        fileContent = '[Text extraction failed]';
       }
     } catch (textError) {
       console.error('Text extraction error:', textError);
-      extractedText = '[Text extraction failed]';
+      fileContent = '[Text extraction failed]';
     }
 
     // Save assignment metadata to database (using admin client to bypass RLS)
