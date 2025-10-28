@@ -124,22 +124,7 @@ const Signup = () => {
               />
             </div>
 
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                Role
-              </label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              >
-                <option value="teacher">Teacher</option>
-                <option value="admin">Administrator</option>
-                <option value="student">Student</option>
-              </select>
-            </div>
+
             
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -229,7 +214,6 @@ const Signup = () => {
             <GoogleSignIn 
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
-              schoolName={formData.schoolName}
             />
           </div>
 

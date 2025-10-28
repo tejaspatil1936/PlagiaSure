@@ -144,6 +144,58 @@ router.get('/user', async (req, res) => {
   }
 });
 
+// Update user school name endpoint
+router.post('/update-school', async (req, res) => {
+  try {
+    const { schoolName } = req.body;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    // Decode the custom token to get user ID
+    try {
+      const tokenData = JSON.parse(Buffer.from(token, 'base64').toString());
+      const userId = tokenData.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+
+      // Update user's school name
+      const { data: updatedUser, error: updateError } = await supabaseAdmin
+        .from('users')
+        .update({ school_name: schoolName || '' })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('❌ School name update error:', updateError);
+        return res.status(500).json({ error: 'Failed to update school information' });
+      }
+
+      console.log('✅ School name updated for user:', userId);
+
+      res.json({
+        message: 'School information updated successfully',
+        user: updatedUser
+      });
+
+    } catch (tokenError) {
+      console.error('❌ Token decode error:', tokenError);
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
+
+  } catch (error) {
+    console.error('❌ Update school error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Google OAuth login endpoint
 router.post('/google', async (req, res) => {
   try {

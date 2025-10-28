@@ -1,8 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { authAPI } from '../services/api';
+import SchoolNameModal from './SchoolNameModal';
 
 const GoogleSignIn = ({ onSuccess, onError, schoolName = '' }) => {
   const googleButtonRef = useRef(null);
+  const [showSchoolModal, setShowSchoolModal] = useState(false);
+  const [pendingUserData, setPendingUserData] = useState(null);
 
   useEffect(() => {
     // Load Google Identity Services script
@@ -77,7 +80,7 @@ const GoogleSignIn = ({ onSuccess, onError, schoolName = '' }) => {
     try {
       const result = await authAPI.googleAuth({
         credential: response.credential,
-        schoolName: schoolName,
+        schoolName: '', // Don't pass school name from signup form
       });
 
       if (result.data.token) {
@@ -85,8 +88,16 @@ const GoogleSignIn = ({ onSuccess, onError, schoolName = '' }) => {
         localStorage.setItem('auth_token', result.data.token);
         localStorage.setItem('user_data', JSON.stringify(result.data.user));
         
-        if (onSuccess) {
-          onSuccess(result.data);
+        // Check if this is a new user and no school name is set
+        if (result.data.isNewUser && !result.data.user.school_name) {
+          // Show school name modal for new Google users
+          setPendingUserData(result.data);
+          setShowSchoolModal(true);
+        } else {
+          // Existing user or school name already set
+          if (onSuccess) {
+            onSuccess(result.data);
+          }
         }
       }
     } catch (error) {
@@ -97,10 +108,62 @@ const GoogleSignIn = ({ onSuccess, onError, schoolName = '' }) => {
     }
   };
 
+  const handleSchoolNameSubmit = async (schoolName) => {
+    try {
+      if (schoolName) {
+        // Update school name
+        await authAPI.updateSchool(schoolName);
+        
+        // Update stored user data
+        const updatedUser = { ...pendingUserData.user, school_name: schoolName };
+        localStorage.setItem('user_data', JSON.stringify(updatedUser));
+        
+        // Update pending data
+        setPendingUserData({
+          ...pendingUserData,
+          user: updatedUser
+        });
+      }
+      
+      // Close modal and proceed
+      setShowSchoolModal(false);
+      
+      if (onSuccess && pendingUserData) {
+        onSuccess(pendingUserData);
+      }
+      
+      // Clear pending data
+      setPendingUserData(null);
+    } catch (error) {
+      console.error('School name update error:', error);
+      throw new Error('Failed to update school information');
+    }
+  };
+
+  const handleModalClose = () => {
+    // User closed modal without completing - still proceed
+    setShowSchoolModal(false);
+    
+    if (onSuccess && pendingUserData) {
+      onSuccess(pendingUserData);
+    }
+    
+    setPendingUserData(null);
+  };
+
   return (
-    <div className="w-full flex justify-center">
-      <div ref={googleButtonRef} className="w-full max-w-sm"></div>
-    </div>
+    <>
+      <div className="w-full flex justify-center">
+        <div ref={googleButtonRef} className="w-full max-w-sm"></div>
+      </div>
+      
+      <SchoolNameModal
+        isOpen={showSchoolModal}
+        onClose={handleModalClose}
+        onSubmit={handleSchoolNameSubmit}
+        userEmail={pendingUserData?.user?.email}
+      />
+    </>
   );
 };
 
