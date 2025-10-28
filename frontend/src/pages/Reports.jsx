@@ -14,6 +14,11 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { formatDate, getScoreColor, getScoreBgColor, cn } from '../lib/utils';
+import ReportSummaryCard from '../components/ReportSummaryCard';
+import EnhancedPlagiarismResults from '../components/EnhancedPlagiarismResults';
+import CitationHelper from '../components/CitationHelper';
+import ReportExporter from '../components/ReportExporter';
+import QuickActions from '../components/QuickActions';
 
 const Reports = () => {
   const { id } = useParams();
@@ -24,6 +29,8 @@ const Reports = () => {
   const [error, setError] = useState('');
   const [generating, setGenerating] = useState({});
   const [rechecking, setRechecking] = useState(false);
+  const [showCitationHelper, setShowCitationHelper] = useState(null);
+  const [ignoredMatches, setIgnoredMatches] = useState(new Set());
 
   useEffect(() => {
     if (id) {
@@ -137,6 +144,47 @@ const Reports = () => {
     return reports.find(report => report.assignment_id === assignmentId);
   };
 
+  const handleIgnoreMatch = (matchIndex) => {
+    const newIgnored = new Set(ignoredMatches);
+    newIgnored.add(matchIndex);
+    setIgnoredMatches(newIgnored);
+  };
+
+  const handleShowCitation = (match) => {
+    setShowCitationHelper(match);
+  };
+
+  const handleQuickAction = (actionId, data) => {
+    console.log('Quick action:', actionId, data);
+    // Here you would implement the actual action logic
+    // For example, sending emails, updating database, etc.
+    
+    // For now, just show a simple notification
+    // In a real app, you'd integrate with your notification system
+    switch (actionId) {
+      case 'flag_high_risk':
+        alert('Assignment flagged for review. Instructor will be notified.');
+        break;
+      case 'schedule_meeting':
+        alert('Meeting request sent to student. They will receive an email shortly.');
+        break;
+      case 'request_citations':
+        alert('Citation request sent to student with specific flagged passages.');
+        break;
+      case 'ai_policy_reminder':
+        alert('AI policy reminder sent to student via email.');
+        break;
+      case 'approve_submission':
+        alert('Submission approved and ready for grading.');
+        break;
+      case 'add_feedback':
+        alert(`Feedback saved: "${data.notes}"`);
+        break;
+      default:
+        console.log('Unknown action:', actionId);
+    }
+  };
+
   // If viewing a single report
   if (id && selectedReport) {
     return (
@@ -223,71 +271,11 @@ const Reports = () => {
               </div>
             )}
 
-            {/* Summary Cards */}
+            {/* Enhanced Summary Card */}
             {selectedReport.status === 'completed' && (
               <>
                 <div className="px-4 py-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* AI Detection Card */}
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-medium text-gray-900">AI Content Detection</h4>
-                        <BarChart3 className="h-5 w-5 text-purple-500" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-2xl font-bold text-purple-600">
-                            {((selectedReport.ai_probability || 0) * 100).toFixed(1)}%
-                          </span>
-                          <span className={cn(
-                            "text-xs px-2 py-1 rounded-full font-medium",
-                            selectedReport.ai_probability > 0.7 && "bg-red-100 text-red-700",
-                            (selectedReport.ai_probability > 0.4 && selectedReport.ai_probability <= 0.7) && "bg-yellow-100 text-yellow-700",
-                            selectedReport.ai_probability <= 0.4 && "bg-green-100 text-green-700"
-                          )}>
-                            {selectedReport.ai_probability > 0.7 ? 'High' : 
-                             selectedReport.ai_probability > 0.4 ? 'Medium' : 'Low'} confidence
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${(selectedReport.ai_probability || 0) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Plagiarism Detection Card */}
-                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-medium text-gray-900">Plagiarism Detection</h4>
-                        <FileText className="h-5 w-5 text-blue-500" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-2xl font-bold text-blue-600">
-                            {((selectedReport.plagiarism_score || 0) * 100).toFixed(1)}%
-                          </span>
-                          <span className={cn(
-                            "text-xs px-2 py-1 rounded-full font-medium",
-                            selectedReport.plagiarism_score > 0.5 && "bg-red-100 text-red-700",
-                            (selectedReport.plagiarism_score > 0.2 && selectedReport.plagiarism_score <= 0.5) && "bg-yellow-100 text-yellow-700",
-                            selectedReport.plagiarism_score <= 0.2 && "bg-green-100 text-green-700"
-                          )}>
-                            {selectedReport.plagiarism_score > 0.5 ? 'High' : 
-                             selectedReport.plagiarism_score > 0.2 ? 'Medium' : 'Low'} confidence
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${(selectedReport.plagiarism_score || 0) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <ReportSummaryCard report={selectedReport} />
                 </div>
 
                 {/* Verdict Section */}
@@ -382,196 +370,38 @@ const Reports = () => {
                   </div>
                 )}
 
-                {/* Sources Summary - Only show if we have real content matches */}
+                {/* Enhanced Plagiarism Results */}
                 {selectedReport.plagiarism_highlight && selectedReport.plagiarism_highlight.length > 0 && 
                  !selectedReport.plagiarism_highlight[0].text.includes('[application/pdf file') && (
                   <div className="px-4 py-4 border-t border-gray-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-medium text-gray-900">Sources with Content Matches</h4>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        {Array.from(new Set(selectedReport.plagiarism_highlight.map(h => h.source))).length} unique sources
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                      {Array.from(new Set(selectedReport.plagiarism_highlight.map(h => h.source)))
-                        .map((source, index) => {
-                          const sourceMatches = selectedReport.plagiarism_highlight.filter(h => h.source === source);
-                          const matchCount = sourceMatches.length;
-                          const avgScore = sourceMatches.reduce((sum, h) => sum + (h.score || 0), 0) / matchCount;
-                          const highestScore = Math.max(...sourceMatches.map(h => h.score || 0));
-                          const sourceTitle = sourceMatches[0]?.title || 'Academic Source';
-                          
-                          const isValidUrl = (() => {
-                            try {
-                              new URL(source);
-                              return true;
-                            } catch {
-                              return false;
-                            }
-                          })();
-                          
-                          return (
-                            <div key={index} className={cn(
-                              "p-3 rounded-lg border transition-all duration-200 hover:shadow-md",
-                              highestScore > 0.7 ? "bg-red-50 border-red-200" :
-                              highestScore > 0.4 ? "bg-yellow-50 border-yellow-200" :
-                              "bg-blue-50 border-blue-200"
-                            )}>
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center space-x-2 mb-1">
-                                    <div className={cn(
-                                      "w-2 h-2 rounded-full",
-                                      highestScore > 0.7 ? "bg-red-500" :
-                                      highestScore > 0.4 ? "bg-yellow-500" :
-                                      "bg-blue-500"
-                                    )}></div>
-                                    {isValidUrl ? (
-                                      <a 
-                                        href={source} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="text-sm font-medium text-blue-600 hover:text-blue-800 truncate"
-                                      >
-                                        {sourceTitle}
-                                      </a>
-                                    ) : (
-                                      <span className="text-sm font-medium text-gray-700 truncate" title={source}>
-                                        {sourceTitle}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-gray-600 truncate">
-                                    {isValidUrl ? new URL(source).hostname : source}
-                                  </p>
-                                </div>
-                                <div className="flex flex-col items-end space-y-1 ml-2">
-                                  <span className={cn(
-                                    "text-xs px-2 py-1 rounded font-medium",
-                                    highestScore > 0.7 ? "bg-red-100 text-red-700" :
-                                    highestScore > 0.4 ? "bg-yellow-100 text-yellow-700" :
-                                    "bg-blue-100 text-blue-700"
-                                  )}>
-                                    {(highestScore * 100).toFixed(0)}% max
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    {matchCount} match{matchCount !== 1 ? 'es' : ''}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
+                    <EnhancedPlagiarismResults 
+                      plagiarismHighlight={selectedReport.plagiarism_highlight.filter((_, index) => !ignoredMatches.has(index))}
+                      onIgnoreMatch={handleIgnoreMatch}
+                      onShowCitation={handleShowCitation}
+                    />
                   </div>
                 )}
 
-                {/* Detailed Plagiarism Highlights - Only show real content */}
-                {selectedReport.plagiarism_highlight && selectedReport.plagiarism_highlight.length > 0 && 
-                 !selectedReport.plagiarism_highlight[0].text.includes('[application/pdf file') && (
-                  <div className="px-4 py-4 border-t border-gray-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-medium text-gray-900">Detailed Plagiarism Analysis</h4>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        {selectedReport.plagiarism_highlight.length} content matches found
-                      </span>
-                    </div>
-                    <div className="space-y-4 max-h-80 overflow-y-auto">
-                      {selectedReport.plagiarism_highlight
-                        .sort((a, b) => (b.score || 0) - (a.score || 0))
-                        .slice(0, 10)
-                        .map((highlight, index) => (
-                        <div key={index} className={cn(
-                          "relative p-4 rounded-lg shadow-sm border-l-4 transition-all duration-200 hover:shadow-md",
-                          (highlight.score || 0) > 0.7 ? "bg-gradient-to-r from-red-50 to-pink-50 border-red-400" :
-                          (highlight.score || 0) > 0.4 ? "bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-400" :
-                          "bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-400"
-                        )}>
-                          <div className="space-y-3">
-                            {/* Highlighted Text with better formatting */}
-                            <div className="relative">
-                              <div className="absolute -left-2 top-0 text-lg text-gray-400">"</div>
-                              <p className="text-sm text-gray-800 leading-relaxed pl-4 pr-4 italic">
-                                <span className={cn(
-                                  "font-medium",
-                                  (highlight.score || 0) > 0.7 ? "text-red-800" :
-                                  (highlight.score || 0) > 0.4 ? "text-yellow-800" :
-                                  "text-blue-800"
-                                )}>
-                                  {highlight.text}
-                                </span>
-                              </p>
-                              <div className="absolute -right-2 bottom-0 text-lg text-gray-400">"</div>
-                            </div>
-                            
-                            {/* Enhanced Source Information */}
-                            <div className="flex items-start justify-between">
-                              <div className="flex flex-col space-y-2">
-                                {(() => {
-                                  try {
-                                    const url = new URL(highlight.source);
-                                    return (
-                                      <a 
-                                        href={highlight.source} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 bg-white px-3 py-1.5 rounded-md border border-blue-200 hover:border-blue-300 transition-colors shadow-sm"
-                                      >
-                                        <ExternalLink className="h-3 w-3 mr-2" />
-                                        <div className="flex flex-col items-start">
-                                          <span className="font-medium">{highlight.title || url.hostname}</span>
-                                          <span className="text-gray-500">{url.hostname}</span>
-                                        </div>
-                                      </a>
-                                    );
-                                  } catch {
-                                    return (
-                                      <div className="inline-flex items-center text-xs text-gray-600 bg-gray-100 px-3 py-1.5 rounded-md border border-gray-200">
-                                        <FileText className="h-3 w-3 mr-2" />
-                                        <span className="font-medium">{highlight.title || 'Academic Source'}</span>
-                                      </div>
-                                    );
-                                  }
-                                })()}
-                                
-                                {/* Matched Patterns */}
-                                {highlight.matchedPatterns && highlight.matchedPatterns.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {highlight.matchedPatterns.slice(0, 3).map((pattern, idx) => (
-                                      <span key={idx} className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-                                        🔍 {pattern}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                                
-                                {/* Reason */}
-                                {highlight.reason && (
-                                  <p className="text-xs text-gray-600 italic">
-                                    💡 {highlight.reason}
-                                  </p>
-                                )}
-                              </div>
-                              
-                              {/* Enhanced Match Score */}
-                              <div className="flex flex-col items-end space-y-1">
-                                <span className={cn(
-                                  "inline-flex items-center text-sm font-bold px-3 py-1.5 rounded-full shadow-sm",
-                                  (highlight.score || 0) > 0.7 && "bg-red-100 text-red-700 border border-red-200",
-                                  (highlight.score || 0) > 0.4 && (highlight.score || 0) <= 0.7 && "bg-yellow-100 text-yellow-700 border border-yellow-200",
-                                  (highlight.score || 0) <= 0.4 && "bg-blue-100 text-blue-700 border border-blue-200"
-                                )}>
-                                  {((highlight.score || 0) * 100).toFixed(1)}%
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {(highlight.score || 0) > 0.7 ? 'High Risk' :
-                                   (highlight.score || 0) > 0.4 ? 'Medium Risk' : 'Low Risk'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                {/* Citation Helper Modal */}
+                {showCitationHelper && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Citation Helper</h3>
+                        <button
+                          onClick={() => setShowCitationHelper(null)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="p-4">
+                        <CitationHelper 
+                          source={showCitationHelper.source}
+                          title={showCitationHelper.title}
+                          matchedText={showCitationHelper.text}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -694,6 +524,21 @@ const Reports = () => {
                     <p className="text-xs text-gray-500">
                       Report completed on {formatDate(selectedReport.completed_at || selectedReport.created_at)}
                     </p>
+                  </div>
+                </div>
+
+                {/* Quick Actions and Export Section */}
+                <div className="px-4 py-4 border-t border-gray-200 space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <QuickActions 
+                      report={selectedReport}
+                      assignment={selectedReport.assignments}
+                      onAction={handleQuickAction}
+                    />
+                    <ReportExporter 
+                      report={selectedReport} 
+                      assignment={selectedReport.assignments}
+                    />
                   </div>
                 </div>
               </>
