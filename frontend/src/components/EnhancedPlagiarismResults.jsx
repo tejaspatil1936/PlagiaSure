@@ -13,10 +13,14 @@ import {
   University
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { normalizeScore, formatScoreAsPercentage, cleanPlagiarismHighlights } from '../lib/scoreUtils';
 
 const EnhancedPlagiarismResults = ({ plagiarismHighlight, onIgnoreMatch, onShowCitation }) => {
   const [expandedMatches, setExpandedMatches] = useState(new Set());
   const [copiedText, setCopiedText] = useState('');
+  
+  // Clean and normalize the plagiarism highlights
+  const cleanedHighlights = cleanPlagiarismHighlights(plagiarismHighlight);
 
   const toggleExpanded = (index) => {
     const newExpanded = new Set(expandedMatches);
@@ -62,34 +66,36 @@ const EnhancedPlagiarismResults = ({ plagiarismHighlight, onIgnoreMatch, onShowC
   };
 
   const getRiskLevel = (score) => {
-    if (score > 0.8) return { level: 'Critical', color: 'red', bgColor: 'red-50' };
-    if (score > 0.6) return { level: 'High', color: 'orange', bgColor: 'orange-50' };
-    if (score > 0.4) return { level: 'Medium', color: 'yellow', bgColor: 'yellow-50' };
+    const normalizedScore = normalizeScore(score);
+    if (normalizedScore > 0.8) return { level: 'Critical', color: 'red', bgColor: 'red-50' };
+    if (normalizedScore > 0.6) return { level: 'High', color: 'orange', bgColor: 'orange-50' };
+    if (normalizedScore > 0.4) return { level: 'Medium', color: 'yellow', bgColor: 'yellow-50' };
     return { level: 'Low', color: 'blue', bgColor: 'blue-50' };
   };
 
   const getRecommendation = (score, sourceType) => {
-    if (score > 0.8) {
+    const normalizedScore = normalizeScore(score);
+    if (normalizedScore > 0.8) {
       return "Immediate attention required. This appears to be direct copying.";
     }
-    if (score > 0.6) {
+    if (normalizedScore > 0.6) {
       return sourceType === 'Academic Source' 
         ? "Consider proper citation or paraphrasing. May be acceptable with attribution."
         : "Significant similarity detected. Review for proper attribution.";
     }
-    if (score > 0.4) {
+    if (normalizedScore > 0.4) {
       return "Moderate similarity. Check if this is common knowledge or requires citation.";
     }
     return "Low similarity. Likely acceptable or common phrasing.";
   };
 
-  // Group matches by source
-  const groupedMatches = plagiarismHighlight.reduce((acc, match, index) => {
+  // Group matches by source using cleaned highlights
+  const groupedMatches = cleanedHighlights.reduce((acc, match) => {
     const source = match.source;
     if (!acc[source]) {
       acc[source] = [];
     }
-    acc[source].push({ ...match, originalIndex: index });
+    acc[source].push(match);
     return acc;
   }, {});
 
@@ -106,19 +112,19 @@ const EnhancedPlagiarismResults = ({ plagiarismHighlight, onIgnoreMatch, onShowC
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-orange-600">
-              {plagiarismHighlight.filter(h => h.score > 0.6).length}
+              {cleanedHighlights.filter(h => h.score > 0.6).length}
             </div>
             <div className="text-sm text-orange-700">High Risk Matches</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-yellow-600">
-              {plagiarismHighlight.filter(h => h.score > 0.4 && h.score <= 0.6).length}
+              {cleanedHighlights.filter(h => h.score > 0.4 && h.score <= 0.6).length}
             </div>
             <div className="text-sm text-yellow-700">Medium Risk</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
-              {plagiarismHighlight.filter(h => h.score <= 0.4).length}
+              {cleanedHighlights.filter(h => h.score <= 0.4).length}
             </div>
             <div className="text-sm text-green-700">Low Risk</div>
           </div>
@@ -199,7 +205,7 @@ const EnhancedPlagiarismResults = ({ plagiarismHighlight, onIgnoreMatch, onShowC
                           "text-lg font-bold",
                           `text-${risk.color}-600`
                         )}>
-                          {(maxScore * 100).toFixed(1)}%
+                          {formatScoreAsPercentage(maxScore)}
                         </div>
                         <div className="text-xs text-gray-500">Max similarity</div>
                       </div>
@@ -246,7 +252,7 @@ const EnhancedPlagiarismResults = ({ plagiarismHighlight, onIgnoreMatch, onShowC
                                     "px-2 py-1 text-xs font-medium rounded",
                                     `bg-${matchRisk.color}-100 text-${matchRisk.color}-700`
                                   )}>
-                                    {(match.score * 100).toFixed(1)}% Match
+                                    {formatScoreAsPercentage(match.score)} Match
                                   </span>
                                   <span className="text-xs text-gray-500">
                                     Match #{matchIndex + 1}
@@ -319,7 +325,7 @@ const EnhancedPlagiarismResults = ({ plagiarismHighlight, onIgnoreMatch, onShowC
                                   <div>
                                     <h5 className="text-xs font-medium text-gray-900 mb-2">Analysis Details</h5>
                                     <div className="space-y-1 text-xs text-gray-600">
-                                      <div>Similarity Score: {(match.score * 100).toFixed(2)}%</div>
+                                      <div>Similarity Score: {formatScoreAsPercentage(match.score, 2)}</div>
                                       <div>Risk Level: {matchRisk.level}</div>
                                       <div>Word Count: {match.text.split(' ').length} words</div>
                                       {match.reason && <div>Detection Reason: {match.reason}</div>}
