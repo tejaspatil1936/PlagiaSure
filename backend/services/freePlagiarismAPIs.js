@@ -11,6 +11,8 @@ export const detectPlagiarismWithFreeAPIs = async (text) => {
       checkWithCrossRef(text),
       checkWithArXiv(text),
       checkWithBingSearch(text),
+      checkWithDuckDuckGo(text),
+      checkWithSemanticScholar(text),
     ]);
 
     let maxScore = 0;
@@ -320,6 +322,167 @@ const checkWithBingSearch = async (text) => {
   }
 };
 
+// DuckDuckGo Instant Answer API (Free, unlimited, no API key needed)
+const checkWithDuckDuckGo = async (text) => {
+  try {
+    console.log("Checking with DuckDuckGo...");
+    
+    // Extract key phrases instead of full sentences for better matching
+    const keyPhrases = extractKeyPhrases(text);
+    let maxScore = 0;
+    let highlights = [];
+
+    // Check top 2 key phrases
+    for (let i = 0; i < Math.min(2, keyPhrases.length); i++) {
+      const phrase = keyPhrases[i];
+      
+      try {
+        // DuckDuckGo Instant Answer API - search for general knowledge
+        const response = await axios.get("https://api.duckduckgo.com/", {
+          params: {
+            q: phrase,
+            format: 'json',
+            no_html: '1',
+            skip_disambig: '1'
+          },
+          timeout: 8000,
+        });
+
+        if (response.data) {
+          let hasResults = false;
+          let sources = [];
+
+          // Check Abstract (Wikipedia-like results)
+          if (response.data.Abstract && response.data.Abstract.trim().length > 0) {
+            hasResults = true;
+            sources.push({
+              url: response.data.AbstractURL || 'https://duckduckgo.com',
+              title: response.data.AbstractSource || 'Knowledge Base',
+              snippet: response.data.Abstract
+            });
+          }
+
+          // Check Definition
+          if (response.data.Definition && response.data.Definition.trim().length > 0) {
+            hasResults = true;
+            sources.push({
+              url: response.data.DefinitionURL || 'https://duckduckgo.com',
+              title: response.data.DefinitionSource || 'Definition',
+              snippet: response.data.Definition
+            });
+          }
+
+          // Check Answer (direct answers)
+          if (response.data.Answer && response.data.Answer.trim().length > 0) {
+            hasResults = true;
+            sources.push({
+              url: response.data.AnswerURL || 'https://duckduckgo.com',
+              title: response.data.AnswerType || 'Direct Answer',
+              snippet: response.data.Answer
+            });
+          }
+
+          if (hasResults) {
+            // Score based on how well the phrase matches known information
+            const score = Math.min(0.6, sources.length * 0.3);
+            maxScore = Math.max(maxScore, score);
+
+            sources.forEach(source => {
+              highlights.push({
+                text: phrase,
+                source: source.url,
+                score: score,
+                title: source.title,
+                reason: "Found in DuckDuckGo knowledge base",
+                snippet: source.snippet.substring(0, 150) + "..."
+              });
+            });
+          }
+        }
+
+        // Rate limiting - be respectful
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } catch (searchError) {
+        console.error("DuckDuckGo search error:", searchError.message);
+      }
+    }
+
+    console.log(`DuckDuckGo found ${highlights.length} matches with max score ${maxScore}`);
+    return { score: maxScore, highlight: highlights };
+  } catch (error) {
+    console.error("DuckDuckGo API error:", error);
+    return { score: 0, highlight: [] };
+  }
+};
+
+// Semantic Scholar API (Free, unlimited but rate limited)
+const checkWithSemanticScholar = async (text) => {
+  try {
+    console.log("Checking with Semantic Scholar...");
+    
+    const academicPhrases = extractAcademicPhrases(text);
+    let maxScore = 0;
+    let highlights = [];
+
+    // Check only 1 phrase to avoid rate limiting
+    for (const phrase of academicPhrases.slice(0, 1)) {
+      try {
+        const response = await axios.get("https://api.semanticscholar.org/graph/v1/paper/search", {
+          params: {
+            query: phrase,
+            limit: 3, // Reduced limit
+            fields: 'title,authors,year,url,citationCount'
+          },
+          headers: {
+            'User-Agent': 'PlagiaSure/1.0 (Academic Integrity Tool)',
+            'Accept': 'application/json'
+          },
+          timeout: 15000,
+        });
+
+        if (response.data.data && response.data.data.length > 0) {
+          const papers = response.data.data;
+          
+          // Conservative scoring to avoid false positives
+          const baseScore = Math.min(0.7, papers.length * 0.2);
+          const citationBonus = papers.some(p => p.citationCount > 50) ? 0.1 : 0;
+          const score = Math.min(0.8, baseScore + citationBonus);
+          
+          maxScore = Math.max(maxScore, score);
+
+          papers.forEach((paper) => {
+            highlights.push({
+              text: phrase,
+              source: paper.url || `https://www.semanticscholar.org/paper/${paper.paperId}`,
+              score: score,
+              title: paper.title || "Academic Paper",
+              authors: paper.authors ? paper.authors.map(a => a.name).join(", ") : "Unknown Authors",
+              year: paper.year || "Unknown Year",
+              citationCount: paper.citationCount || 0,
+              reason: `Found in academic literature (${paper.citationCount || 0} citations)`
+            });
+          });
+        }
+
+        // Longer rate limiting to avoid 429 errors
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      } catch (searchError) {
+        if (searchError.response?.status === 429) {
+          console.log("Semantic Scholar rate limit reached, skipping remaining searches");
+          break; // Stop searching if rate limited
+        }
+        console.error("Semantic Scholar search error:", searchError.message);
+      }
+    }
+
+    console.log(`Semantic Scholar found ${highlights.length} matches with max score ${maxScore}`);
+    return { score: maxScore, highlight: highlights };
+  } catch (error) {
+    console.error("Semantic Scholar API error:", error);
+    return { score: 0, highlight: [] };
+  }
+};
+
 // Helper functions
 const splitTextIntoChunks = (text, maxLength) => {
   const chunks = [];
@@ -338,6 +501,26 @@ const extractScientificTerms = (text) => {
   const scientificWords =
     text.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
   return scientificWords.filter((term) => term.length > 10).slice(0, 3);
+};
+
+const extractKeyPhrases = (text) => {
+  // Extract meaningful phrases for general knowledge search
+  const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 20);
+  const phrases = [];
+  
+  sentences.forEach(sentence => {
+    // Look for proper nouns and important concepts
+    const properNouns = sentence.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
+    const importantPhrases = sentence.match(/\b(?:theory|algorithm|method|system|technology|principle|concept|model)\s+\w+/gi) || [];
+    
+    phrases.push(...properNouns);
+    phrases.push(...importantPhrases);
+  });
+  
+  // Remove duplicates and return top phrases
+  return [...new Set(phrases)]
+    .filter(phrase => phrase.length > 5 && phrase.length < 50)
+    .slice(0, 3);
 };
 
 const removeDuplicateHighlights = (highlights) => {

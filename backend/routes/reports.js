@@ -273,12 +273,23 @@ async function processAnalysis(reportId, text) {
       verdict = 'Content appears original';
     }
 
-    // Log analysis results
+    // Enhanced logging with API source breakdown
     console.log(`📊 Analysis Results for Report ${reportId}:`);
     console.log(`🤖 AI Probability: ${(aiProbability * 100).toFixed(1)}%`);
     console.log(`📚 Plagiarism Score: ${(plagiarismScore * 100).toFixed(1)}%`);
     console.log(`🎯 AI Highlights: ${aiHighlight.length} items`);
     console.log(`🔍 Plagiarism Highlights: ${plagiarismHighlight.length} items`);
+    
+    // Log API source breakdown if available
+    if (plagiarismResult.status === 'fulfilled' && plagiarismResult.value.apiSources) {
+      const apiSources = plagiarismResult.value.apiSources;
+      console.log(`📊 API Source Breakdown:`);
+      console.log(`  🦆 DuckDuckGo: ${apiSources.duckduckgo} matches`);
+      console.log(`  🎓 Semantic Scholar: ${apiSources.semanticScholar} matches`);
+      console.log(`  📚 CrossRef: ${apiSources.crossref} matches`);
+      console.log(`  🔬 arXiv: ${apiSources.arxiv} matches`);
+    }
+    
     console.log(`⚖️ Verdict: ${verdict}`);
 
     // Update report with results

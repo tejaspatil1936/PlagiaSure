@@ -1,16 +1,56 @@
 import axios from 'axios';
 import detectPlagiarismTrulyFree from './trulyFreePlagiarism.js';
 import { getCombinedDetection } from './aiDetection.js';
+import { detectPlagiarismWithFreeAPIs } from './freePlagiarismAPIs.js';
 
 export const detectPlagiarism = async (text) => {
   try {
     console.log('🚀 Starting comprehensive plagiarism and AI detection...');
     
-    // Use the new combined detection from AI service
+    // PRIORITY 1: Use the enhanced free APIs (DuckDuckGo + Semantic Scholar + CrossRef + arXiv)
+    console.log('🆓 Using enhanced free APIs (DuckDuckGo, Semantic Scholar, CrossRef, arXiv)...');
+    const freeAPIsResult = await detectPlagiarismWithFreeAPIs(text);
+    
+    if (freeAPIsResult && (freeAPIsResult.score > 0 || freeAPIsResult.highlight.length > 0)) {
+      console.log(`✅ Free APIs found ${freeAPIsResult.highlight.length} matches with score ${(freeAPIsResult.score * 100).toFixed(1)}%`);
+      
+      // Try to get AI detection from combined service
+      let aiDetection = null;
+      try {
+        const combinedResult = await getCombinedDetection(text);
+        if (combinedResult && combinedResult.ai) {
+          aiDetection = {
+            probability: combinedResult.ai.probability,
+            highlights: combinedResult.ai.highlights
+          };
+        }
+      } catch (aiError) {
+        console.log('AI detection not available, continuing with plagiarism results');
+      }
+      
+      return {
+        score: freeAPIsResult.score,
+        highlight: freeAPIsResult.highlight,
+        sources: freeAPIsResult.sources || [],
+        method: freeAPIsResult.method || 'Enhanced Free APIs (DuckDuckGo + Semantic Scholar + CrossRef + arXiv)',
+        totalSentences: text.split(/[.!?]+/).filter(s => s.trim().length > 15).length,
+        flaggedSentences: freeAPIsResult.highlight.length,
+        apiSources: {
+          duckduckgo: freeAPIsResult.highlight.filter(h => h.reason?.includes('DuckDuckGo')).length,
+          semanticScholar: freeAPIsResult.highlight.filter(h => h.reason?.includes('academic literature')).length,
+          crossref: freeAPIsResult.highlight.filter(h => h.authors && !h.reason?.includes('academic literature')).length,
+          arxiv: freeAPIsResult.highlight.filter(h => h.source?.includes('arXiv') || h.title?.includes('Scientific')).length
+        },
+        aiDetection: aiDetection
+      };
+    }
+    
+    // PRIORITY 2: Use the combined detection from AI service
+    console.log('🤖 Trying combined AI + plagiarism detection...');
     const combinedResult = await getCombinedDetection(text);
     
     if (combinedResult && combinedResult.plagiarism) {
-      // Convert to legacy format for compatibility
+      console.log('✅ Combined detection successful');
       return {
         score: combinedResult.plagiarism.probability,
         highlight: combinedResult.plagiarism.highlights.map(h => ({
@@ -29,21 +69,23 @@ export const detectPlagiarism = async (text) => {
       };
     }
 
-    // Fallback to truly free detection
-    console.log('Falling back to truly free plagiarism detection...');
+    // PRIORITY 3: Fallback to truly free detection
+    console.log('📚 Falling back to truly free plagiarism detection...');
     const trulyFreeResult = await detectPlagiarismTrulyFree(text);
     
     if (trulyFreeResult && trulyFreeResult.score > 0) {
+      console.log('✅ Truly free detection successful');
       return trulyFreeResult;
     }
 
-    // Final fallback to enhanced mock detection
-    console.log('Using enhanced mock detection...');
+    // PRIORITY 4: Final fallback to enhanced mock detection
+    console.log('🎭 Using enhanced mock detection as final fallback...');
     return await enhancedMockPlagiarismDetection(text);
 
   } catch (error) {
     console.error('Plagiarism detection error:', error);
     // Return enhanced mock results as final fallback
+    console.log('❌ All methods failed, using mock detection');
     return await enhancedMockPlagiarismDetection(text);
   }
 };
