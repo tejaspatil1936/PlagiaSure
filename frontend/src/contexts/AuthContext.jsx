@@ -28,12 +28,14 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
+      // Try regular API call for Supabase tokens
       const response = await authAPI.getUser();
       setUser(response.data.user);
       setIsAuthenticated(true);
     } catch (error) {
-      console.error('Auth check failed:', error);
+      // API call failed, token is invalid
       removeAuthToken();
+      localStorage.removeItem('user_data');
       setUser(null);
       setIsAuthenticated(false);
     } finally {
@@ -86,6 +88,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
+
   const logout = async () => {
     try {
       await authAPI.logout();
@@ -93,6 +97,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       removeAuthToken();
+      localStorage.removeItem('user_data');
       setUser(null);
       setIsAuthenticated(false);
     }

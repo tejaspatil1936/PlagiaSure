@@ -32,10 +32,23 @@ export const supabaseAdmin = createClient(
 // CORS configuration - Must be before other middleware
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:3000",
+      process.env.FRONTEND_URL,
+    ].filter(Boolean),
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+    ],
+    optionsSuccessStatus: 200, // For legacy browser support
   })
 );
 
@@ -49,7 +62,22 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.method === 'OPTIONS', // Skip rate limiting for preflight requests
+  skip: (req) => req.method === "OPTIONS", // Skip rate limiting for preflight requests
+});
+
+// Handle preflight requests
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type,Authorization,X-Requested-With,Accept,Origin"
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.sendStatus(200);
 });
 
 // Body parsing middleware
@@ -100,15 +128,15 @@ app.post("/api/test-file-upload", async (req, res) => {
   try {
     const testContent = "This is a test assignment file";
     const fileName = `test-assignment-${Date.now()}.txt`;
-    
+
     console.log("Testing file upload:", fileName);
-    
+
     const { data, error } = await supabaseAdmin.storage
       .from("Data")
       .upload(fileName, testContent, {
         contentType: "text/plain",
       });
-    
+
     if (error) {
       console.error("Test upload error:", error);
       return res.status(500).json({
@@ -117,14 +145,13 @@ app.post("/api/test-file-upload", async (req, res) => {
         details: error,
       });
     }
-    
+
     res.json({
       status: "Upload Success",
       message: "Test assignment file uploaded successfully",
       fileName: fileName,
       data: data,
     });
-    
   } catch (error) {
     console.error("Test upload error:", error);
     res.status(500).json({
@@ -257,13 +284,15 @@ app.get("/storage-check", async (req, res) => {
     console.log("Available buckets:", buckets);
 
     const bucketName = process.env.SUPABASE_BUCKET_NAME || "Data";
-    const dataBucket = buckets.find((bucket) => bucket.name.toLowerCase() === bucketName.toLowerCase());
+    const dataBucket = buckets.find(
+      (bucket) => bucket.name.toLowerCase() === bucketName.toLowerCase()
+    );
 
     if (!dataBucket) {
       return res.status(500).json({
         status: "Bucket Missing",
         error: `${bucketName} bucket not found`,
-        availableBuckets: buckets.map(b => b.name),
+        availableBuckets: buckets.map((b) => b.name),
         instructions: [
           "1. Check if bucket name is exactly 'Data' (case-sensitive)",
           "2. Verify bucket exists in Supabase Dashboard → Storage",
@@ -276,7 +305,7 @@ app.get("/storage-check", async (req, res) => {
       status: "Storage OK",
       message: "Data bucket exists",
       bucket: dataBucket,
-      allBuckets: buckets.map(b => ({ name: b.name, public: b.public })),
+      allBuckets: buckets.map((b) => ({ name: b.name, public: b.public })),
     });
   } catch (error) {
     res.status(500).json({

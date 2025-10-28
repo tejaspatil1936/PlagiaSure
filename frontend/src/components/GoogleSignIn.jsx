@@ -77,31 +77,48 @@ const GoogleSignIn = ({ onSuccess, onError, schoolName = '' }) => {
   };
 
   const handleCredentialResponse = async (response) => {
+    console.log('🔐 Google credential received, calling backend...');
     try {
       const result = await authAPI.googleAuth({
         credential: response.credential,
         schoolName: '', // Don't pass school name from signup form
       });
 
+      console.log('🎉 Backend response:', result.data);
+
       if (result.data.token) {
+        console.log('💾 Storing token and user data...');
         // Store the token
         localStorage.setItem('auth_token', result.data.token);
         localStorage.setItem('user_data', JSON.stringify(result.data.user));
         
+        console.log('✅ Token stored:', result.data.token.substring(0, 50) + '...');
+        console.log('✅ User data stored:', result.data.user.email);
+        
+        // IMMEDIATELY call onSuccess to update AuthContext
+        console.log('🔄 Calling onSuccess to update AuthContext...');
+        if (onSuccess) {
+          onSuccess(result.data);
+        }
+        
         // Check if this is a new user and no school name is set
         if (result.data.isNewUser && !result.data.user.school_name) {
+          console.log('👤 New user detected, showing school modal');
           // Show school name modal for new Google users
           setPendingUserData(result.data);
           setShowSchoolModal(true);
         } else {
-          // Existing user or school name already set
-          if (onSuccess) {
-            onSuccess(result.data);
-          }
+          console.log('👤 Existing user or school name set, proceeding...');
+        }
+      } else {
+        console.error('❌ No token in response:', result.data);
+        if (onError) {
+          onError('No authentication token received');
         }
       }
     } catch (error) {
-      console.error('Google Sign-In error:', error);
+      console.error('❌ Google Sign-In API error:', error);
+      console.error('❌ Error response:', error.response?.data);
       if (onError) {
         onError(error.response?.data?.error || 'Google Sign-In failed');
       }

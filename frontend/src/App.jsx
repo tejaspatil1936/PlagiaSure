@@ -10,6 +10,7 @@ import Assignments from './pages/Assignments';
 import Reports from './pages/Reports';
 import Subscription from './pages/Subscription';
 import TestGoogleAuth from './pages/TestGoogleAuth';
+import AuthDebug from './components/AuthDebug';
 // import Admin from './pages/Admin';
 import './App.css';
 

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Google OAuth Config</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <h1>Google OAuth Configuration Test</h1>
+    <div id="g_id_onload"
+         data-client_id="635671071087-vdmcoebril1hpa76ijj3ebgs2nplnkm2.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse">
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
+
+    <script>
+        function handleCredentialResponse(response) {
+            console.log("Google OAuth Success:", response);
+            alert("Google OAuth working! Check console for details.");
+        }
+        
+        window.onload = function() {
+            console.log("Testing Google OAuth configuration...");
+            console.log("Client ID: 635671071087-vdmcoebril1hpa76ijj3ebgs2nplnkm2.apps.googleusercontent.com");
+            console.log("Current origin:", window.location.origin);
+        }
+    </script>
+</body>
+</html>
