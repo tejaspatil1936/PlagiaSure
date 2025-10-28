@@ -1,0 +1,107 @@
+import React, { useEffect, useRef } from 'react';
+import { authAPI } from '../services/api';
+
+const GoogleSignIn = ({ onSuccess, onError, schoolName = '' }) => {
+  const googleButtonRef = useRef(null);
+
+  useEffect(() => {
+    // Load Google Identity Services script
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogleSignIn;
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
+
+  const initializeGoogleSignIn = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    // Check if Google Client ID is configured
+    if (!clientId || clientId === 'your_google_client_id_here') {
+      console.error('Google Client ID not configured. Please set VITE_GOOGLE_CLIENT_ID in your .env file');
+      if (googleButtonRef.current) {
+        googleButtonRef.current.innerHTML = `
+          <div class="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-center text-sm text-gray-500">
+            Google Sign-In not configured.<br>
+            <span class="text-xs">Please set up Google OAuth credentials.</span>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    if (window.google && googleButtonRef.current) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        // Get the container width to make button responsive
+        const containerWidth = googleButtonRef.current.offsetWidth;
+        const buttonWidth = Math.min(400, containerWidth - 20); // Max 400px, with 20px margin
+
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          theme: 'outline',
+          size: 'large',
+          width: buttonWidth,
+          text: 'signin_with',
+          shape: 'rectangular',
+          logo_alignment: 'left',
+        });
+      } catch (error) {
+        console.error('Failed to initialize Google Sign-In:', error);
+        if (googleButtonRef.current) {
+          googleButtonRef.current.innerHTML = `
+            <div class="w-full p-3 border border-red-300 rounded-md bg-red-50 text-center text-sm text-red-600">
+              Google Sign-In initialization failed.<br>
+              <span class="text-xs">Check console for details.</span>
+            </div>
+          `;
+        }
+      }
+    }
+  };
+
+  const handleCredentialResponse = async (response) => {
+    try {
+      const result = await authAPI.googleAuth({
+        credential: response.credential,
+        schoolName: schoolName,
+      });
+
+      if (result.data.token) {
+        // Store the token
+        localStorage.setItem('auth_token', result.data.token);
+        localStorage.setItem('user_data', JSON.stringify(result.data.user));
+        
+        if (onSuccess) {
+          onSuccess(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Google Sign-In error:', error);
+      if (onError) {
+        onError(error.response?.data?.error || 'Google Sign-In failed');
+      }
+    }
+  };
+
+  return (
+    <div className="w-full flex justify-center">
+      <div ref={googleButtonRef} className="w-full max-w-sm"></div>
+    </div>
+  );
+};
+
+export default GoogleSignIn;

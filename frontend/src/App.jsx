@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import Assignments from './pages/Assignments';
 import Reports from './pages/Reports';
 import Subscription from './pages/Subscription';
+import TestGoogleAuth from './pages/TestGoogleAuth';
 // import Admin from './pages/Admin';
 import './App.css';
 
@@ -61,6 +62,7 @@ function App() {
                 <Signup />
               </PublicRoute>
             } />
+            <Route path="/test-google" element={<TestGoogleAuth />} />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={
