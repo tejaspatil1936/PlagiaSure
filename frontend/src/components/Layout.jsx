@@ -108,7 +108,7 @@ const Layout = ({ children }) => {
 const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout }) => {
   return (
     <>
-      <div className="flex items-center h-16 flex-shrink-0 px-4 bg-indigo-600">
+      <div className="flex items-center h-16 flex-shrink-0 px-4 bg-gradient-primary">
         <img 
           src="/plagiasure.png" 
           alt="PlagiaSure Logo" 
@@ -126,14 +126,14 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout 
                 to={item.href}
                 className={cn(
                   isActive
-                    ? 'bg-indigo-100 text-indigo-900'
+                    ? 'bg-gradient-secondary text-white'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
                   'group flex items-center px-2 py-2 text-sm font-medium rounded-md'
                 )}
               >
                 <item.icon
                   className={cn(
-                    isActive ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500',
+                    isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500',
                     'mr-3 flex-shrink-0 h-6 w-6'
                   )}
                 />
@@ -179,7 +179,7 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout 
         <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
           <div className="flex items-center w-full">
             <div className="flex-shrink-0">
-              <div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-gradient-secondary flex items-center justify-center">
                 <User className="h-5 w-5 text-white" />
               </div>
             </div>

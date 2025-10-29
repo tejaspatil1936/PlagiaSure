@@ -166,7 +166,7 @@ const Dashboard = () => {
             to="/assignments"
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <Upload className="h-8 w-8 text-indigo-600 mr-3" />
+            <Upload className="h-8 w-8 text-[#3282B8] mr-3" />
             <div>
               <p className="font-medium text-gray-900">Upload Assignment</p>
               <p className="text-sm text-gray-500">Upload a new file for analysis</p>
@@ -177,7 +177,7 @@ const Dashboard = () => {
             to="/reports"
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <BarChart3 className="h-8 w-8 text-green-600 mr-3" />
+            <BarChart3 className="h-8 w-8 text-[#52DE97] mr-3" />
             <div>
               <p className="font-medium text-gray-900">View Reports</p>
               <p className="text-sm text-gray-500">Check analysis results</p>
@@ -189,7 +189,7 @@ const Dashboard = () => {
               to="/subscription"
               className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <CheckCircle className="h-8 w-8 text-purple-600 mr-3" />
+              <CheckCircle className="h-8 w-8 text-[#3AB795] mr-3" />
               <div>
                 <p className="font-medium text-gray-900">Get Subscription</p>
                 <p className="text-sm text-gray-500">Request access to premium features</p>
@@ -263,7 +263,7 @@ const Dashboard = () => {
           <div className="px-6 py-3 bg-gray-50">
             <Link
               to="/reports"
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+              className="text-sm font-medium text-[#3282B8] hover:text-[#2D4B7C]"
             >
               View all reports →
             </Link>
@@ -276,10 +276,10 @@ const Dashboard = () => {
 
 const StatCard = ({ title, value, icon: Icon, color }) => {
   const colorClasses = {
-    blue: 'text-blue-600 bg-blue-100',
-    green: 'text-green-600 bg-green-100',
-    yellow: 'text-yellow-600 bg-yellow-100',
-    purple: 'text-purple-600 bg-purple-100',
+    blue: 'text-[#3282B8] bg-[#3282B8]/10',
+    green: 'text-[#52DE97] bg-[#52DE97]/10',
+    yellow: 'text-[#3AB795] bg-[#3AB795]/10',
+    purple: 'text-[#2D4B7C] bg-[#2D4B7C]/10',
     red: 'text-red-600 bg-red-100'
   };
 

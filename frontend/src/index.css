@@ -1,1 +1,83 @@
 @import "tailwindcss";
+
+/* PlagiaSure Custom Color Scheme */
+:root {
+  --color-dark-blue: #2d4b7c;
+  --color-mid-blue: #3282b8;
+  --color-teal: #3ab795;
+  --color-bright-green: #52de97;
+  --color-white: #ffffff;
+
+  /* Gradient backgrounds */
+  --gradient-primary: linear-gradient(
+    135deg,
+    #2d4b7c 0%,
+    #3282b8 25%,
+    #3ab795 75%,
+    #52de97 100%
+  );
+  --gradient-secondary: linear-gradient(
+    45deg,
+    #3282b8 0%,
+    #3ab795 50%,
+    #52de97 100%
+  );
+  --gradient-accent: linear-gradient(90deg, #2d4b7c 0%, #3282b8 100%);
+}
+
+/* Custom gradient classes */
+.bg-gradient-primary {
+  background: var(--gradient-primary);
+}
+
+.bg-gradient-secondary {
+  background: var(--gradient-secondary);
+}
+
+.bg-gradient-accent {
+  background: var(--gradient-accent);
+}
+
+/* Text gradients */
+.text-gradient-primary {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-secondary {
+  background: var(--gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Custom animations */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(61, 183, 149, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(61, 183, 149, 0.6);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}

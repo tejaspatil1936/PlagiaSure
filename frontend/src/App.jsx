@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
@@ -109,8 +110,8 @@ function App() {
               </ProtectedRoute>
             } /> */}
             
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" />} />
+            {/* Landing Page */}
+            <Route path="/" element={<Landing />} />
             
             {/* 404 fallback */}
             <Route path="*" element={
