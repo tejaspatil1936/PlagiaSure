@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -18,51 +18,59 @@ const Login = () => {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
-    setError('');
+    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     const result = await login(formData.email, formData.password);
-    
+
     if (result.success) {
-      navigate('/dashboard');
+      navigate("/dashboard");
     } else {
       setError(result.error);
     }
-    
+
     setLoading(false);
   };
-
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <img
+              src="/plagiasure.png"
+              alt="PlagiaSure Logo"
+              className="h-16 w-16"
+            />
+          </div>
+          <h2 className="text-3xl font-extrabold text-gray-900">
             Sign in to PlagiaSure
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Plagiarism & AI Content Detection Platform
+          <p className="mt-2 text-sm text-gray-600">
+            Advanced AI & Plagiarism Detection Platform
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
               {error}
             </div>
           )}
-          
+
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email address
               </label>
               <input
@@ -77,16 +85,19 @@ const Login = () => {
                 placeholder="Enter your email"
               />
             </div>
-            
+
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
               <div className="mt-1 relative">
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
                   value={formData.password}
@@ -118,16 +129,15 @@ const Login = () => {
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                'Sign in'
+                "Sign in"
               )}
             </button>
           </div>
-
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
+            Don't have an account?{" "}
             <Link
               to="/signup"
               className="font-medium text-indigo-600 hover:text-indigo-500"
@@ -135,22 +145,6 @@ const Login = () => {
               Sign up here
             </Link>
           </p>
-        </div>
-
-        <div className="mt-8 border-t border-gray-200 pt-6">
-          <div className="text-center">
-            <p className="text-xs text-gray-500">
-              Demo Credentials (for testing):
-            </p>
-            <div className="mt-2 space-y-1">
-              <p className="text-xs text-gray-600">
-                <strong>Teacher:</strong> teacher@demo.com / demo123
-              </p>
-              <p className="text-xs text-gray-600">
-                <strong>Admin:</strong> admin@demo.com / admin123
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

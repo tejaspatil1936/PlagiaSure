@@ -201,10 +201,15 @@ const ImprovementSuggestions = ({ reports = [], assignments = [] }) => {
       </div>
       
       <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-        <p className="text-xs text-gray-500">
-          💡 These suggestions are based on your usage patterns and industry best practices.
-          Dismiss suggestions that don't apply to your workflow.
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-500">
+            💡 These suggestions are based on your usage patterns and industry best practices.
+          </p>
+          <div className="flex items-center space-x-2">
+            <img src="/plagiasure.png" alt="PlagiaSure" className="h-4 w-4" />
+            <span className="text-xs text-gray-400">PlagiaSure AI</span>
+          </div>
+        </div>
       </div>
     </div>
   );

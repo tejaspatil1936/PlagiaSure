@@ -13,6 +13,7 @@ import {
   Users
 } from 'lucide-react';
 import { formatDate, getScoreColor } from '../lib/utils';
+import BrandedLoading from '../components/BrandedLoading';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -79,7 +80,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <BrandedLoading message="Loading your dashboard..." size="lg" />
       </div>
     );
   }
@@ -87,11 +88,18 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Welcome back, {user?.email}
-        </p>
+      <div className="flex items-center space-x-4">
+        <img 
+          src="/plagiasure.png" 
+          alt="PlagiaSure Logo" 
+          className="h-12 w-12"
+        />
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">PlagiaSure Dashboard</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Welcome back, {user?.email} • Advanced AI & Plagiarism Detection
+          </p>
+        </div>
       </div>
 
       {/* Subscription Status */}
