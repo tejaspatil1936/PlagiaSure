@@ -19,8 +19,16 @@ const EnhancedPlagiarismResults = ({ plagiarismHighlight, onIgnoreMatch, onShowC
   const [expandedMatches, setExpandedMatches] = useState(new Set());
   const [copiedText, setCopiedText] = useState('');
   
-  // Clean and normalize the plagiarism highlights
-  const cleanedHighlights = cleanPlagiarismHighlights(plagiarismHighlight);
+  // Clean and normalize the plagiarism highlights, filter out low-value matches
+  const cleanedHighlights = cleanPlagiarismHighlights(plagiarismHighlight)
+    .filter(highlight => {
+      // Only show matches with score > 0.1 (10%) to avoid 0% noise
+      return highlight.score > 0.1 && 
+             highlight.text && 
+             highlight.text.trim().length > 10 && // Minimum text length
+             !highlight.text.includes('[application/pdf file') && // Filter out file processing errors
+             !highlight.text.includes('text extraction'); // Filter out extraction errors
+    });
 
   const toggleExpanded = (index) => {
     const newExpanded = new Set(expandedMatches);
@@ -98,6 +106,26 @@ const EnhancedPlagiarismResults = ({ plagiarismHighlight, onIgnoreMatch, onShowC
     acc[source].push(match);
     return acc;
   }, {});
+
+  // If no significant matches, show a clean "no issues" message
+  if (cleanedHighlights.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">No Significant Plagiarism Detected</h3>
+        <p className="text-gray-600 mb-4">
+          The content appears to be original with no concerning similarities found.
+        </p>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 max-w-md mx-auto">
+          <p className="text-sm text-green-700">
+            ✅ Content passed plagiarism screening<br/>
+            ✅ No high-risk matches identified<br/>
+            ✅ Ready for review and grading
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
