@@ -153,14 +153,16 @@ const Landing = () => {
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left">
-              <h1 className="text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                Advanced AI &
-                <span className="block text-gradient-secondary">
+            <div className="text-center lg:text-left hero-text-container">
+              <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                <span className="text-white text-shadow-strong">
+                  Advanced AI &
+                </span>
+                <span className="block text-white text-shadow-strong font-extrabold">
                   Plagiarism Detection
                 </span>
               </h1>
-              <p className="text-xl text-white/90 mb-8 leading-relaxed">
+              <p className="text-xl text-white mb-8 leading-relaxed text-shadow-soft">
                 Protect academic integrity with our cutting-edge AI technology.
                 Detect plagiarism and AI-generated content with 99%+ accuracy
                 using multiple free APIs and advanced machine learning.
