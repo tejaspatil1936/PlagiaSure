@@ -19,7 +19,7 @@ const Footer = () => {
           </div>
           
           <div className="flex items-center space-x-6 text-sm text-white/80">
-            <span>© 2024 PlagiaSure. All rights reserved.</span>
+            <span>© 2025 PlagiaSure. All rights reserved.</span>
             <div className="flex space-x-4">
               <Link to="/privacy" className="hover:text-white">Privacy</Link>
               <Link to="/terms" className="hover:text-white">Terms</Link>
