@@ -1,13 +1,13 @@
-import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 // Force rebuild to fix Upload import issue
-import { useAuth } from '../contexts/AuthContext';
-import { 
-  FileText, 
-  BarChart3, 
-  Settings, 
-  LogOut, 
-  User, 
+import { useAuth } from "../contexts/AuthContext";
+import {
+  FileText,
+  BarChart3,
+  Settings,
+  LogOut,
+  User,
   Shield,
   Menu,
   X,
@@ -15,10 +15,10 @@ import {
   Upload,
   CreditCard,
   ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
-import { cn } from '../lib/utils';
-import Footer from './Footer';
+  ChevronRight,
+} from "lucide-react";
+import { cn } from "../lib/utils";
+import Footer from "./Footer";
 
 const Layout = ({ children }) => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -29,34 +29,64 @@ const Layout = ({ children }) => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home, color: 'text-[#3282B8]' },
-    { name: 'Assignments', href: '/assignments', icon: Upload, color: 'text-[#3AB795]' },
-    { name: 'Reports', href: '/reports', icon: BarChart3, color: 'text-[#52DE97]' },
-    { name: 'Subscription', href: '/subscription', icon: CreditCard, color: 'text-[#2D4B7C]' },
+    {
+      name: "Dashboard",
+      href: "/dashboard",
+      icon: Home,
+      color: "text-[#3282B8]",
+    },
+    {
+      name: "Assignments",
+      href: "/assignments",
+      icon: Upload,
+      color: "text-[#3AB795]",
+    },
+    {
+      name: "Reports",
+      href: "/reports",
+      icon: BarChart3,
+      color: "text-[#52DE97]",
+    },
+    {
+      name: "Subscription",
+      href: "/subscription",
+      icon: CreditCard,
+      color: "text-[#2D4B7C]",
+    },
   ];
 
   const adminNavigation = [
-    { name: 'Admin Panel', href: '/admin', icon: Shield, color: 'text-red-600' },
+    {
+      name: "Admin Panel",
+      href: "/admin",
+      icon: Shield,
+      color: "text-red-600",
+    },
   ];
 
   if (!isAuthenticated) {
     return <div className="min-h-screen bg-gray-50">{children}</div>;
   }
 
-  const isAdmin = user?.profile?.is_admin || user?.profile?.role === 'admin';
+  const isAdmin = user?.profile?.is_admin || user?.profile?.role === "admin";
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar */}
-      <div className={cn(
-        "fixed inset-0 flex z-50 lg:hidden",
-        sidebarOpen ? "block" : "hidden"
-      )}>
-        <div className="fixed inset-0 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+      <div
+        className={cn(
+          "fixed inset-0 flex z-50 lg:hidden",
+          sidebarOpen ? "block" : "hidden"
+        )}
+      >
+        <div
+          className="fixed inset-0 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
         <div className="relative flex-1 flex flex-col max-w-sm w-full bg-white shadow-2xl">
           <div className="absolute top-0 right-0 -mr-14 pt-4">
             <button
@@ -66,8 +96,8 @@ const Layout = ({ children }) => {
               <X className="h-6 w-6 text-white drop-shadow-sm" />
             </button>
           </div>
-          <MobileSidebarContent 
-            navigation={navigation} 
+          <MobileSidebarContent
+            navigation={navigation}
             adminNavigation={isAdmin ? adminNavigation : []}
             location={location}
             user={user}
@@ -78,13 +108,15 @@ const Layout = ({ children }) => {
       </div>
 
       {/* Desktop sidebar */}
-      <div className={cn(
-        "hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 transition-all duration-300 z-30",
-        sidebarCollapsed ? "lg:w-20" : "lg:w-72"
-      )}>
+      <div
+        className={cn(
+          "hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 transition-all duration-300 z-30",
+          sidebarCollapsed ? "lg:w-20" : "lg:w-72"
+        )}
+      >
         <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-b from-white via-gray-50 to-white border-r border-gray-200 shadow-xl">
-          <SidebarContent 
-            navigation={navigation} 
+          <SidebarContent
+            navigation={navigation}
             adminNavigation={isAdmin ? adminNavigation : []}
             location={location}
             user={user}
@@ -96,10 +128,12 @@ const Layout = ({ children }) => {
       </div>
 
       {/* Main content */}
-      <div className={cn(
-        "flex flex-col flex-1 min-h-screen transition-all duration-300",
-        sidebarCollapsed ? "lg:pl-20" : "lg:pl-72"
-      )}>
+      <div
+        className={cn(
+          "flex flex-col flex-1 min-h-screen transition-all duration-300",
+          sidebarCollapsed ? "lg:pl-20" : "lg:pl-72"
+        )}
+      >
         {/* Mobile Header - Always visible on small and medium screens */}
         <div className="sticky top-0 z-20 lg:hidden bg-white shadow-lg border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-4">
@@ -110,9 +144,9 @@ const Layout = ({ children }) => {
               <Menu className="h-6 w-6 text-white drop-shadow-sm" />
             </button>
             <div className="flex items-center space-x-3">
-              <img 
-                src="/plagiasure.png" 
-                alt="PlagiaSure Logo" 
+              <img
+                src="/plagiasure.png"
+                alt="PlagiaSure Logo"
                 className="h-8 w-8"
               />
               <h1 className="text-xl font-bold text-gray-900">PlagiaSure</h1>
@@ -133,7 +167,14 @@ const Layout = ({ children }) => {
   );
 };
 
-const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onLogout, onClose }) => {
+const MobileSidebarContent = ({
+  navigation,
+  adminNavigation,
+  location,
+  user,
+  onLogout,
+  onClose,
+}) => {
   return (
     <>
       {/* Mobile Header */}
@@ -141,18 +182,22 @@ const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onL
         <div className="absolute inset-0 opacity-20">
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#52DE97] rounded-full blur-2xl translate-y-12 -translate-x-12 animate-float"></div>
         </div>
-        
+
         <div className="flex items-center relative z-10">
           <div className="relative">
-            <img 
-              src="/plagiasure.png" 
-              alt="PlagiaSure Logo" 
+            <img
+              src="/plagiasure.png"
+              alt="PlagiaSure Logo"
               className="h-10 w-10 drop-shadow-lg"
             />
           </div>
           <div className="ml-4">
-            <h1 className="text-xl font-bold text-white drop-shadow-sm">PlagiaSure</h1>
-            <p className="text-xs text-white text-opacity-90 font-medium">AI Detection Suite</p>
+            <h1 className="text-xl font-bold text-white drop-shadow-sm">
+              PlagiaSure
+            </h1>
+            <p className="text-xs text-white text-opacity-90 font-medium">
+              AI Detection Suite
+            </p>
           </div>
         </div>
       </div>
@@ -170,8 +215,8 @@ const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onL
                 className={cn(
                   "group flex items-center px-4 py-4 text-base font-medium rounded-xl transition-all duration-200 relative overflow-hidden",
                   isActive
-                    ? 'bg-gradient-to-r from-[#3282B8] to-[#3AB795] text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 hover:text-[#3282B8] hover:shadow-md'
+                    ? "bg-gradient-to-r from-[#3282B8] to-[#3AB795] text-white shadow-lg"
+                    : "text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 hover:text-[#3282B8] hover:shadow-md"
                 )}
               >
                 {isActive && (
@@ -180,7 +225,9 @@ const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onL
                 <item.icon
                   className={cn(
                     "flex-shrink-0 h-6 w-6 mr-4 transition-all duration-200",
-                    isActive ? 'text-white drop-shadow-sm' : `${item.color} group-hover:scale-110`
+                    isActive
+                      ? "text-white drop-shadow-sm"
+                      : `${item.color} group-hover:scale-110`
                   )}
                 />
                 <span className="relative z-10">{item.name}</span>
@@ -192,7 +239,7 @@ const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onL
               </Link>
             );
           })}
-          
+
           {adminNavigation.length > 0 && (
             <>
               <div className="border-t border-gray-200 mt-6 pt-6">
@@ -210,14 +257,16 @@ const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onL
                     className={cn(
                       "group flex items-center px-4 py-4 text-base font-medium rounded-xl transition-all duration-200 relative overflow-hidden",
                       isActive
-                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
-                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-700 hover:shadow-md'
+                        ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg"
+                        : "text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-700 hover:shadow-md"
                     )}
                   >
                     <item.icon
                       className={cn(
                         "flex-shrink-0 h-6 w-6 mr-4 transition-all duration-200",
-                        isActive ? 'text-white' : `${item.color} group-hover:scale-110`
+                        isActive
+                          ? "text-white"
+                          : `${item.color} group-hover:scale-110`
                       )}
                     />
                     <span className="relative z-10">{item.name}</span>
@@ -227,7 +276,7 @@ const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onL
             </>
           )}
         </nav>
-        
+
         {/* Mobile User Profile */}
         <div className="flex-shrink-0 border-t border-gray-200 p-4">
           <div className="flex items-center w-full">
@@ -238,8 +287,12 @@ const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onL
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
             </div>
             <div className="ml-4 flex-1 min-w-0">
-              <p className="text-base font-semibold text-gray-900 truncate">{user?.email}</p>
-              <p className="text-sm text-gray-500 truncate">{user?.profile?.school_name || 'Premium User'}</p>
+              <p className="text-base font-semibold text-gray-900 truncate">
+                {user?.email}
+              </p>
+              <p className="text-sm text-gray-500 truncate">
+                {user?.profile?.school_name || "Premium User"}
+              </p>
             </div>
             <button
               onClick={onLogout}
@@ -255,7 +308,15 @@ const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onL
   );
 };
 
-const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout, collapsed, onToggleCollapse }) => {
+const SidebarContent = ({
+  navigation,
+  adminNavigation,
+  location,
+  user,
+  onLogout,
+  collapsed,
+  onToggleCollapse,
+}) => {
   return (
     <>
       {/* Header */}
@@ -265,23 +326,27 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout,
           <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-3xl -translate-y-16 translate-x-16 animate-pulse"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#52DE97] rounded-full blur-2xl translate-y-12 -translate-x-12 animate-float"></div>
         </div>
-        
+
         <div className="flex items-center relative z-10">
           <div className="relative">
-            <img 
-              src="/plagiasure.png" 
-              alt="PlagiaSure Logo" 
+            <img
+              src="/plagiasure.png"
+              alt="PlagiaSure Logo"
               className="h-10 w-10 drop-shadow-lg"
             />
           </div>
           {!collapsed && (
             <div className="ml-4">
-              <h1 className="text-xl font-bold text-white drop-shadow-sm">PlagiaSure</h1>
-              <p className="text-xs text-white text-opacity-90 font-medium">AI Detection Suite</p>
+              <h1 className="text-xl font-bold text-white drop-shadow-sm">
+                PlagiaSure
+              </h1>
+              <p className="text-xs text-white text-opacity-90 font-medium">
+                AI Detection Suite
+              </p>
             </div>
           )}
         </div>
-        
+
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
@@ -309,8 +374,8 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout,
                 className={cn(
                   "group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative overflow-hidden",
                   isActive
-                    ? 'bg-gradient-to-r from-[#3282B8] to-[#3AB795] text-white shadow-lg transform scale-105'
-                    : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 hover:text-[#3282B8] hover:shadow-md hover:scale-102'
+                    ? "bg-gradient-to-r from-[#3282B8] to-[#3AB795] text-white shadow-lg transform scale-105"
+                    : "text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 hover:text-[#3282B8] hover:shadow-md hover:scale-102"
                 )}
                 title={collapsed ? item.name : undefined}
               >
@@ -320,8 +385,10 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout,
                 <item.icon
                   className={cn(
                     "flex-shrink-0 h-5 w-5 transition-all duration-200",
-                    isActive ? 'text-white drop-shadow-sm' : `${item.color} group-hover:scale-110`,
-                    collapsed ? 'mx-auto' : 'mr-4'
+                    isActive
+                      ? "text-white drop-shadow-sm"
+                      : `${item.color} group-hover:scale-110`,
+                    collapsed ? "mx-auto" : "mr-4"
                   )}
                 />
                 {!collapsed && (
@@ -335,7 +402,7 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout,
               </Link>
             );
           })}
-          
+
           {adminNavigation.length > 0 && (
             <>
               <div className="border-t border-gray-200 mt-6 pt-6">
@@ -354,16 +421,18 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout,
                     className={cn(
                       "group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative overflow-hidden",
                       isActive
-                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transform scale-105'
-                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-700 hover:shadow-md hover:scale-102'
+                        ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transform scale-105"
+                        : "text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-700 hover:shadow-md hover:scale-102"
                     )}
                     title={collapsed ? item.name : undefined}
                   >
                     <item.icon
                       className={cn(
                         "flex-shrink-0 h-5 w-5 transition-all duration-200",
-                        isActive ? 'text-white' : `${item.color} group-hover:scale-110`,
-                        collapsed ? 'mx-auto' : 'mr-4'
+                        isActive
+                          ? "text-white"
+                          : `${item.color} group-hover:scale-110`,
+                        collapsed ? "mx-auto" : "mr-4"
                       )}
                     />
                     {!collapsed && (
@@ -375,13 +444,15 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout,
             </>
           )}
         </nav>
-        
+
         {/* User Profile */}
         <div className="flex-shrink-0 border-t border-gray-200 p-4">
-          <div className={cn(
-            "flex items-center transition-all duration-200",
-            collapsed ? "justify-center" : "w-full"
-          )}>
+          <div
+            className={cn(
+              "flex items-center transition-all duration-200",
+              collapsed ? "justify-center" : "w-full"
+            )}
+          >
             <div className="flex-shrink-0 relative">
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#3282B8] to-[#52DE97] flex items-center justify-center shadow-lg">
                 <User className="h-5 w-5 text-white" />
@@ -391,8 +462,12 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout,
             {!collapsed && (
               <>
                 <div className="ml-3 flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{user?.email}</p>
-                  <p className="text-xs text-gray-500 truncate">{user?.profile?.school_name || 'Premium User'}</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {user?.email}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user?.profile?.school_name || "Premium User"}
+                  </p>
                 </div>
                 <button
                   onClick={onLogout}
