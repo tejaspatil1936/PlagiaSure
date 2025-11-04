@@ -74,6 +74,13 @@ export const billingAPI = {
   }
 };
 
+// Payment API
+export const paymentAPI = {
+  createOrder: (data) => api.post('/api/payments/create-order', data),
+  verifyPayment: (data) => api.post('/api/payments/verify-payment', data),
+  getStatus: (orderId) => api.get(`/api/payments/status/${orderId}`),
+};
+
 // Utility functions
 export const setAuthToken = (token) => {
   localStorage.setItem('auth_token', token);

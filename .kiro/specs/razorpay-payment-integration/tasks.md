@@ -66,7 +66,6 @@
 
 - [x] 4. Update billing routes with new plan structure
 
-
   - [x] 4.1 Update plan definitions in billing.js
 
     - Replace existing PLANS with new pricing structure
@@ -83,13 +82,7 @@
 
 - [x] 5. Implement usage restriction middleware
 
-
-
-
-
   - [x] 5.1 Create usage checking middleware
-
-
 
     - Implement checkUsageLimit middleware function
     - Check free user lifetime limits (2 scans max)
@@ -99,8 +92,6 @@
 
   - [x] 5.2 Apply usage restrictions to assignment routes
 
-
-
     - Add checkUsageLimit middleware to assignment creation routes
     - Update assignment routes to increment usage counters
     - Implement usage tracking for successful scans
@@ -108,16 +99,16 @@
 
   - [x] 5.3 Create usage tracking service
 
-
     - Implement getUserSubscription() helper function
     - Add getTotalUsageCount() for lifetime usage tracking
     - Create getMonthlyUsageCount() for monthly limit checking
     - Include usage reset logic for monthly cycles
     - _Requirements: 4.3, 4.4_
 
-- [ ] 6. Create frontend payment components
+- [x] 6. Create frontend payment components
 
-  - [ ] 6.1 Create payment modal component
+
+  - [x] 6.1 Create payment modal component
 
     - Build PaymentModal.jsx with plan selection
     - Integrate Razorpay checkout script
@@ -125,7 +116,7 @@
     - Display loading states during payment processing
     - _Requirements: 1.1, 1.2, 3.1_
 
-  - [ ] 6.2 Create subscription dashboard component
+  - [x] 6.2 Create subscription dashboard component
 
     - Build SubscriptionDashboard.jsx for current plan display
     - Show usage statistics and remaining scans
@@ -133,7 +124,8 @@
     - Display payment history
     - _Requirements: 3.3, 4.3_
 
-  - [ ] 6.3 Add usage limit notifications
+  - [x] 6.3 Add usage limit notifications
+
     - Create UsageLimitModal.jsx for limit exceeded scenarios
     - Show upgrade prompts when limits are reached
     - Display remaining usage counts in UI
