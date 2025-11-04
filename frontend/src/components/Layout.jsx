@@ -56,7 +56,7 @@ const Layout = ({ children }) => {
         "fixed inset-0 flex z-50 lg:hidden",
         sidebarOpen ? "block" : "hidden"
       )}>
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
         <div className="relative flex-1 flex flex-col max-w-sm w-full bg-white shadow-2xl">
           <div className="absolute top-0 right-0 -mr-14 pt-4">
             <button
