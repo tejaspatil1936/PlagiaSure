@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Download, ArrowRight, Home, Sparkles, Shield, Zap, FileText } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { paymentAPI } from '../../services/api';
+import { downloadInvoicePDF } from '../../services/pdfService';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
@@ -57,24 +58,42 @@ const PaymentSuccess = () => {
 
   const handleDownloadReceipt = async () => {
     try {
-      const response = await paymentAPI.downloadInvoice(paymentDetails.paymentId);
+      // Get invoice data from backend
+      const response = await paymentAPI.getInvoiceData(paymentDetails.paymentId);
       
-      // Create and download the PDF
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `invoice-${paymentDetails.paymentId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (response.data.success) {
+        // Generate and download PDF on client side
+        downloadInvoicePDF(response.data.invoiceData, `invoice-${paymentDetails.paymentId}.pdf`);
+      } else {
+        throw new Error('Failed to get invoice data');
+      }
     } catch (error) {
       console.error('Failed to download PDF invoice:', error);
       
-      // Show user-friendly error message
-      const errorMessage = error.response?.data?.error || error.message || 'Unknown error occurred';
-      alert(`Failed to download invoice: ${errorMessage}`);
+      // Show user-friendly error message based on error type
+      if (error.response?.status === 404) {
+        alert('Invoice not found. This payment may not exist in our records or you may not have access to it.');
+      } else {
+        const errorMessage = error.response?.data?.error || error.message || 'Unknown error occurred';
+        alert(`Failed to download invoice: ${errorMessage}`);
+      }
+    }
+  };
+
+  const handleDownloadDemoReceipt = async () => {
+    try {
+      // Get demo invoice data from backend
+      const response = await paymentAPI.getDemoInvoiceData();
+      
+      if (response.data.success) {
+        // Generate and download demo PDF on client side
+        downloadInvoicePDF(response.data.invoiceData, 'demo-invoice.pdf');
+      } else {
+        throw new Error('Failed to get demo invoice data');
+      }
+    } catch (error) {
+      console.error('Failed to download demo PDF invoice:', error);
+      alert('Failed to download demo invoice. Please try again.');
     }
   };
 
@@ -187,13 +206,21 @@ const PaymentSuccess = () => {
 
             {/* Action Buttons */}
             <div className="space-y-4">
-              {paymentDetails?.hasRealPaymentId && (
+              {paymentDetails?.hasRealPaymentId ? (
                 <button
                   onClick={handleDownloadReceipt}
                   className="w-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 py-4 px-6 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 flex items-center justify-center space-x-3 font-semibold shadow-md hover:shadow-lg"
                 >
                   <Download className="h-5 w-5" />
                   <span>Download Invoice</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleDownloadDemoReceipt}
+                  className="w-full bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 py-4 px-6 rounded-xl hover:from-blue-200 hover:to-blue-300 transition-all duration-300 flex items-center justify-center space-x-3 font-semibold shadow-md hover:shadow-lg"
+                >
+                  <Download className="h-5 w-5" />
+                  <span>Download Demo Invoice</span>
                 </button>
               )}
 

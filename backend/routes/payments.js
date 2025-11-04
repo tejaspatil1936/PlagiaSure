@@ -9,7 +9,7 @@ import {
   getRazorpayKeyId,
   getPaymentUrls
 } from '../services/razorpayService.js';
-import { generateInvoicePDF } from '../services/invoiceService.js';
+
 
 const router = express.Router();
 
@@ -1029,32 +1029,10 @@ router.get('/status/:orderId', authenticateUser, asyncHandler(async (req, res) =
 }));
 
 
-// Download PDF invoice for a payment
-router.get('/invoice/:paymentId/pdf', authenticateUser, async (req, res) => {
+// Generate demo invoice data for testing (development only)
+router.get('/invoice/demo/data', authenticateUser, async (req, res) => {
   try {
-    const { paymentId } = req.params;
     const userId = req.user.id;
-
-    // Get payment details from database
-    const { data: payment, error: paymentError } = await supabase
-      .from('payments')
-      .select(`
-        *,
-        subscriptions (
-          plan_type,
-          user_id
-        )
-      `)
-      .eq('razorpay_payment_id', paymentId)
-      .eq('user_id', userId)
-      .single();
-
-    if (paymentError || !payment) {
-      return res.status(404).json({
-        error: 'Payment not found',
-        code: 'PAYMENT_NOT_FOUND'
-      });
-    }
 
     // Get user details
     const { data: user, error: userError } = await supabase
@@ -1070,22 +1048,128 @@ router.get('/invoice/:paymentId/pdf', authenticateUser, async (req, res) => {
       });
     }
 
-    // Generate PDF invoice
-    const pdfBuffer = await generateInvoicePDF(payment, user);
-
-    // Set response headers for PDF download
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="invoice-${paymentId}.pdf"`);
-    res.setHeader('Content-Length', pdfBuffer.length);
-
-    // Send PDF
-    res.send(pdfBuffer);
+    // Return demo invoice data
+    res.json({
+      success: true,
+      invoiceData: {
+        payment: {
+          id: 'pay_DEMO123456789',
+          orderId: 'order_DEMO123456789',
+          amount: 59900, // ₹599
+          currency: 'INR',
+          createdAt: new Date().toISOString(),
+          paymentMethod: 'Demo Payment',
+          planType: 'pro_monthly'
+        },
+        user: {
+          email: user.email,
+          schoolName: user.school_name || 'Demo University',
+          userId: userId
+        },
+        company: {
+          name: 'PlagiaSure',
+          tagline: 'Advanced AI & Plagiarism Detection Platform',
+          email: 'support@plagiasure.in',
+          website: 'www.plagiasure.in'
+        }
+      }
+    });
 
   } catch (error) {
-    console.error('Generate PDF invoice error:', error);
+    console.error('Generate demo invoice error:', error);
     res.status(500).json({
-      error: 'Failed to generate PDF invoice',
-      code: 'PDF_GENERATION_ERROR'
+      error: 'Failed to generate demo invoice',
+      code: 'DEMO_INVOICE_ERROR'
+    });
+  }
+});
+
+// Get invoice data for client-side PDF generation
+router.get('/invoice/:paymentId/data', authenticateUser, async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const userId = req.user.id;
+
+    console.log(`📄 Invoice data request - PaymentID: ${paymentId}, UserID: ${userId}`);
+
+    // Get payment details from database (without subscription join to avoid relationship issues)
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('razorpay_payment_id', paymentId)
+      .eq('user_id', userId)
+      .single();
+
+    // Get subscription details separately
+    let subscription = null;
+    if (payment && !paymentError) {
+      const { data: subData } = await supabase
+        .from('subscriptions')
+        .select('plan_type')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      subscription = subData;
+    }
+
+    if (paymentError || !payment) {
+      console.log(`❌ Payment not found - Error: ${paymentError?.message}, PaymentID: ${paymentId}`);
+      return res.status(404).json({
+        error: 'Payment not found. This invoice may not exist or you may not have access to it.',
+        code: 'PAYMENT_NOT_FOUND',
+        details: paymentError?.message
+      });
+    }
+
+    console.log(`✅ Payment found: ${payment.id}`);
+
+    // Get user details
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('email, school_name')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+
+    // Return invoice data for client-side PDF generation
+    res.json({
+      success: true,
+      invoiceData: {
+        payment: {
+          id: payment.razorpay_payment_id,
+          orderId: payment.razorpay_order_id,
+          amount: payment.amount,
+          currency: payment.currency || 'INR',
+          createdAt: payment.created_at,
+          paymentMethod: payment.payment_method || 'Razorpay Gateway',
+          planType: subscription?.plan_type || 'premium'
+        },
+        user: {
+          email: user.email,
+          schoolName: user.school_name,
+          userId: userId
+        },
+        company: {
+          name: 'PlagiaSure',
+          tagline: 'Advanced AI & Plagiarism Detection Platform',
+          email: 'support@plagiasure.in',
+          website: 'www.plagiasure.in'
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get invoice data error:', error);
+    res.status(500).json({
+      error: 'Failed to get invoice data',
+      code: 'INVOICE_DATA_ERROR'
     });
   }
 });

@@ -81,9 +81,8 @@ export const paymentAPI = {
   createOrder: (data) => api.post('/api/payments/create-order', data),
   verifyPayment: (data) => api.post('/api/payments/verify-payment', data),
   getStatus: (orderId) => api.get(`/api/payments/status/${orderId}`),
-  downloadInvoice: (paymentId) => api.get(`/api/payments/invoice/${paymentId}/pdf`, { 
-    responseType: 'blob' 
-  }),
+  getInvoiceData: (paymentId) => api.get(`/api/payments/invoice/${paymentId}/data`),
+  getDemoInvoiceData: () => api.get('/api/payments/invoice/demo/data'),
 };
 
 // Utility functions

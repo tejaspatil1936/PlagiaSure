@@ -8,6 +8,7 @@ import {
   reportsAPI,
   paymentAPI,
 } from "../services/api";
+import { downloadInvoicePDF } from "../services/pdfService";
 import {
   FileText,
   BarChart3,
@@ -463,18 +464,18 @@ const PaymentHistorySection = () => {
 
   const handleDownloadInvoice = async (paymentId) => {
     try {
-      const response = await paymentAPI.downloadInvoice(paymentId);
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `invoice-${paymentId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Get invoice data from backend
+      const response = await paymentAPI.getInvoiceData(paymentId);
+      
+      if (response.data.success) {
+        // Generate and download PDF on client side
+        downloadInvoicePDF(response.data.invoiceData, `invoice-${paymentId}.pdf`);
+      } else {
+        throw new Error('Failed to get invoice data');
+      }
     } catch (error) {
       console.error("Failed to download invoice:", error);
+      alert('Failed to download invoice. Please try again.');
     }
   };
 
