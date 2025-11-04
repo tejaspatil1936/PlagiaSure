@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+// Force rebuild to fix Upload import issue
 import { reportsAPI, assignmentsAPI } from '../services/api';
 import { 
   BarChart3, 
@@ -11,7 +12,8 @@ import {
   Download,
   ArrowLeft,
   Play,
-  RefreshCw
+  RefreshCw,
+  Upload
 } from 'lucide-react';
 import { formatDate, getScoreColor, getScoreBgColor, cn } from '../lib/utils';
 import ReportSummaryCard from '../components/ReportSummaryCard';
@@ -561,8 +563,8 @@ const Reports = () => {
           </div>
           
           <div className="relative z-10 flex items-center space-x-6">
-            <div className="p-4 bg-white bg-opacity-20 rounded-2xl backdrop-blur-sm border border-white border-opacity-30 shadow-lg">
-              <BarChart3 className="h-8 w-8 text-white drop-shadow-sm" />
+            <div className="p-4 bg-white bg-opacity-90 rounded-2xl backdrop-blur-sm border border-white border-opacity-50 shadow-lg">
+              <BarChart3 className="h-8 w-8 text-[#2D4B7C] drop-shadow-sm" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white drop-shadow-sm">Analysis Reports</h1>
@@ -636,39 +638,33 @@ const Reports = () => {
                         {report ? (
                           <Link
                             to={`/reports/${report.id}`}
-                            className="group relative overflow-hidden bg-gradient-to-r from-[#3282B8] to-[#52DE97] text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                            className="inline-flex items-center bg-gradient-to-r from-[#3282B8] to-[#52DE97] text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                           >
-                            <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                            <div className="relative z-10 flex items-center">
-                              <BarChart3 className="h-4 w-4 mr-2" />
-                              View Report
-                            </div>
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            View Report
                           </Link>
                         ) : (
                           <button
                             onClick={() => generateReport(assignment.id)}
                             disabled={generating[assignment.id]}
                             className={cn(
-                              "group relative overflow-hidden font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105",
+                              "inline-flex items-center font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105",
                               generating[assignment.id]
                                 ? "bg-gray-400 cursor-not-allowed text-white"
                                 : "bg-gradient-to-r from-[#52DE97] to-[#3AB795] text-white hover:from-[#3AB795] hover:to-[#52DE97]"
                             )}
                           >
-                            <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                            <div className="relative z-10 flex items-center">
-                              {generating[assignment.id] ? (
-                                <>
-                                  <Clock className="h-4 w-4 mr-2 animate-spin" />
-                                  Generating...
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="h-4 w-4 mr-2" />
-                                  Generate Report
-                                </>
-                              )}
-                            </div>
+                            {generating[assignment.id] ? (
+                              <>
+                                <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <Play className="h-4 w-4 mr-2" />
+                                Generate Report
+                              </>
+                            )}
                           </button>
                         )}
                       </div>
@@ -689,13 +685,10 @@ const Reports = () => {
                   <div className="mt-8">
                     <Link
                       to="/assignments"
-                      className="group relative overflow-hidden bg-gradient-to-r from-[#3282B8] to-[#52DE97] text-white font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                      className="inline-flex items-center bg-gradient-to-r from-[#3282B8] to-[#52DE97] text-white font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                      <div className="relative z-10 flex items-center">
-                        <Upload className="h-5 w-5 mr-3" />
-                        Upload Assignment
-                      </div>
+                      <Upload className="h-5 w-5 mr-3" />
+                      Upload Assignment
                     </Link>
                   </div>
                 </div>

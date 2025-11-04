@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+// Force rebuild to fix Upload import issue
 import { useAuth } from '../contexts/AuthContext';
 import { 
   FileText, 

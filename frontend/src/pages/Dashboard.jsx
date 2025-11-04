@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+// Force rebuild to fix Upload import issue
 import { useAuth } from '../contexts/AuthContext';
 import { billingAPI, assignmentsAPI, reportsAPI } from '../services/api';
 import { 
@@ -100,7 +101,7 @@ const Dashboard = () => {
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <div className="relative">
-              <div className="p-4 bg-white bg-opacity-20 rounded-2xl backdrop-blur-sm border border-white border-opacity-30 shadow-lg">
+              <div className="p-4 bg-white bg-opacity-90 rounded-2xl backdrop-blur-sm border border-white border-opacity-50 shadow-lg">
                 <img 
                   src="/plagiasure.png" 
                   alt="PlagiaSure Logo" 

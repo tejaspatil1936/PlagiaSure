@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { assignmentsAPI } from "../services/api";
+// Force rebuild to fix Upload import issue
 import {
   Upload,
   FileText,
@@ -123,8 +124,8 @@ const Assignments = () => {
         
         <div className="relative z-10 flex justify-between items-center">
           <div className="flex items-center space-x-6">
-            <div className="p-4 bg-white bg-opacity-20 rounded-2xl backdrop-blur-sm border border-white border-opacity-30 shadow-lg">
-              <Upload className="h-8 w-8 text-white drop-shadow-sm" />
+            <div className="p-4 bg-white bg-opacity-90 rounded-2xl backdrop-blur-sm border border-white border-opacity-50 shadow-lg">
+              <Upload className="h-8 w-8 text-[#3AB795] drop-shadow-sm" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white drop-shadow-sm">Assignments</h1>
@@ -135,13 +136,10 @@ const Assignments = () => {
           </div>
           <button
             onClick={() => setShowUploadModal(true)}
-            className="group relative overflow-hidden bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm border border-white border-opacity-30 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            className="inline-flex items-center bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm border border-white border-opacity-30 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-            <div className="relative z-10 flex items-center">
-              <Plus className="h-5 w-5 mr-3" />
-              Upload Assignment
-            </div>
+            <Plus className="h-5 w-5 mr-3" />
+            Upload Assignment
           </button>
         </div>
       </div>
@@ -173,13 +171,10 @@ const Assignments = () => {
           <div className="mt-8">
             <button
               onClick={() => setShowUploadModal(true)}
-              className="group relative overflow-hidden bg-gradient-to-r from-[#3282B8] to-[#52DE97] text-white font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              className="inline-flex items-center bg-gradient-to-r from-[#3282B8] to-[#52DE97] text-white font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-              <div className="relative z-10 flex items-center">
-                <Plus className="h-5 w-5 mr-3" />
-                Upload Your First Assignment
-              </div>
+              <Plus className="h-5 w-5 mr-3" />
+              Upload Your First Assignment
             </button>
           </div>
         </div>
