@@ -1,7 +1,15 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { Eye, EyeOff, Loader2, ArrowLeft, Shield, Zap, Users } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  ArrowLeft,
+  Shield,
+  Zap,
+  Users,
+} from "lucide-react";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -194,7 +202,8 @@ const Login = () => {
               Advanced AI Detection Platform
             </h3>
             <p className="text-white text-opacity-90 text-lg mb-8">
-              Join thousands of educators using our cutting-edge technology to maintain academic integrity.
+              Join thousands of educators using our cutting-edge technology to
+              maintain academic integrity.
             </p>
 
             <div className="space-y-6">
@@ -203,8 +212,13 @@ const Login = () => {
                   <Zap className="h-6 w-6 text-black" />
                 </div>
                 <div>
-                  <h4 className="text-white font-semibold mb-1">Lightning Fast Analysis</h4>
-                  <p className="text-white text-opacity-80 text-sm">Get comprehensive reports in seconds with our advanced AI algorithms.</p>
+                  <h4 className="text-white font-semibold mb-1">
+                    Lightning Fast Analysis
+                  </h4>
+                  <p className="text-white text-opacity-80 text-sm">
+                    Get comprehensive reports in seconds with our advanced AI
+                    algorithms.
+                  </p>
                 </div>
               </div>
 
@@ -213,8 +227,13 @@ const Login = () => {
                   <Shield className="h-6 w-6 text-black" />
                 </div>
                 <div>
-                  <h4 className="text-white font-semibold mb-1">Secure & Private</h4>
-                  <p className="text-white text-opacity-80 text-sm">Your documents are processed securely with enterprise-grade encryption.</p>
+                  <h4 className="text-white font-semibold mb-1">
+                    Secure & Private
+                  </h4>
+                  <p className="text-white text-opacity-80 text-sm">
+                    Your documents are processed securely with enterprise-grade
+                    encryption.
+                  </p>
                 </div>
               </div>
 
@@ -223,8 +242,13 @@ const Login = () => {
                   <Users className="h-6 w-6 text-black" />
                 </div>
                 <div>
-                  <h4 className="text-white font-semibold mb-1">Trusted by Educators</h4>
-                  <p className="text-white text-opacity-80 text-sm">Used by leading institutions worldwide for academic integrity.</p>
+                  <h4 className="text-white font-semibold mb-1">
+                    Trusted by Educators
+                  </h4>
+                  <p className="text-white text-opacity-80 text-sm">
+                    Used by leading institutions worldwide for academic
+                    integrity.
+                  </p>
                 </div>
               </div>
             </div>
