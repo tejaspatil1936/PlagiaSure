@@ -16,7 +16,7 @@ import paymentRoutes from "./routes/payments.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Initialize Supabase client (for auth and database)
 export const supabase = createClient(
@@ -84,6 +84,12 @@ app.options("*", (req, res) => {
 // Body parsing middleware
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // Health check endpoint
 app.get("/health", (req, res) => {

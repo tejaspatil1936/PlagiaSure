@@ -210,26 +210,56 @@ const PaymentModal = ({
 
   const verifyPayment = async (paymentResponse) => {
     try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:5001"
-        }/api/payments/verify-payment`,
-        {
+      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5001";
+      const apiUrl = `${baseUrl}/api/payments/verify-payment`;
+      console.log('PaymentModal: Attempting to verify payment at:', apiUrl);
+      console.log('PaymentModal: Auth token:', localStorage.getItem("auth_token") ? 'Present' : 'Missing');
+      
+      const paymentData = {
+        razorpay_order_id: paymentResponse.razorpay_order_id,
+        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+        razorpay_signature: paymentResponse.razorpay_signature,
+      };
+
+      let response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      // If regular verification fails with 404 or 403, try email-based verification
+      if (!response.ok && (response.status === 404 || response.status === 403)) {
+        console.log('PaymentModal: Regular verification failed, trying email-based verification...');
+        
+        const emailApiUrl = `${baseUrl}/api/payments/verify-payment-by-email`;
+        response = await fetch(emailApiUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
           },
-          body: JSON.stringify({
-            razorpay_order_id: paymentResponse.razorpay_order_id,
-            razorpay_payment_id: paymentResponse.razorpay_payment_id,
-            razorpay_signature: paymentResponse.razorpay_signature,
-          }),
-        }
-      );
+          body: JSON.stringify(paymentData),
+        });
+      }
 
       if (!response.ok) {
-        const errorData = await response.json();
+        console.log('PaymentModal: Response not OK. Status:', response.status, 'StatusText:', response.statusText);
+        console.log('PaymentModal: Response headers:', [...response.headers.entries()]);
+        
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.log('PaymentModal: Error response body:', errorData);
+        } catch (e) {
+          console.log('PaymentModal: Could not parse error response as JSON');
+          const textResponse = await response.text();
+          console.log('PaymentModal: Error response text:', textResponse);
+          errorData = { message: textResponse || `HTTP ${response.status}` };
+        }
+        
         throw new Error(errorData.message || "Payment verification failed");
       }
 

@@ -241,6 +241,15 @@ router.post('/create-order', authenticateUser, validateCreateOrderInput, asyncHa
     }
 
     // Store payment record in database
+    console.log('Creating payment record:', {
+      user_id: userId,
+      subscription_id: subscription.id,
+      razorpay_order_id: orderResult.order.id,
+      amount: plan.price,
+      currency: orderData.currency,
+      status: 'created'
+    });
+
     const { data: payment, error: paymentCreateError } = await supabase
       .from('payments')
       .insert([{
@@ -254,6 +263,10 @@ router.post('/create-order', authenticateUser, validateCreateOrderInput, asyncHa
       }])
       .select()
       .single();
+
+    if (payment) {
+      console.log('Payment record created successfully:', payment.id);
+    }
 
     if (paymentCreateError) {
       console.error('Error creating payment record:', paymentCreateError);
@@ -298,22 +311,96 @@ router.post('/verify-payment', authenticateUser, validatePaymentVerificationInpu
   const userId = req.user.id;
 
   try {
-    // Get payment record from database
-    const { data: payment, error: paymentError } = await supabase
+    console.log('Payment verification request:', {
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      userId: userId,
+      userEmail: req.user.email,
+      timestamp: new Date().toISOString()
+    });
+
+    // First, try to get payment record with user filter
+    let { data: payment, error: paymentError } = await supabase
       .from('payments')
       .select(`
         *,
-        subscriptions (*)
+        subscriptions!payments_subscription_id_fkey (*)
       `)
       .eq('razorpay_order_id', razorpay_order_id)
       .eq('user_id', userId)
       .single();
 
+    // If not found with user filter, try without user filter to debug
     if (paymentError || !payment) {
-      return res.status(404).json({
-        error: 'Payment record not found',
-        code: 'PAYMENT_NOT_FOUND'
-      });
+      console.log('Payment not found with user filter, trying without user filter...');
+      
+      const { data: anyPayment, error: anyPaymentError } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          subscriptions!payments_subscription_id_fkey (*)
+        `)
+        .eq('razorpay_order_id', razorpay_order_id)
+        .single();
+
+      if (anyPaymentError || !anyPayment) {
+        console.log('Payment record not found in database at all:', {
+          orderId: razorpay_order_id,
+          paymentError,
+          anyPaymentError
+        });
+        
+        return res.status(404).json({
+          error: 'Payment record not found',
+          code: 'PAYMENT_NOT_FOUND',
+          debug: {
+            orderId: razorpay_order_id,
+            userId: userId,
+            searchedWithUserFilter: true,
+            searchedWithoutUserFilter: true,
+            paymentError: paymentError?.message,
+            anyPaymentError: anyPaymentError?.message,
+            suggestion: `Try visiting /api/payments/search/${razorpay_order_id} to check if payment record exists`
+          }
+        });
+      }
+
+      // Payment exists but user doesn't match - check if it's the same email
+      if (anyPayment.user_id !== userId) {
+        console.log('Payment found but user mismatch, checking email match:', {
+          orderId: razorpay_order_id,
+          expectedUserId: userId,
+          actualUserId: anyPayment.user_id,
+          currentUserEmail: req.user.email
+        });
+
+        // Get the user who owns the payment record
+        const { data: paymentOwner, error: ownerError } = await supabase
+          .from('users')
+          .select('email')
+          .eq('id', anyPayment.user_id)
+          .single();
+
+        if (!ownerError && paymentOwner && paymentOwner.email === req.user.email) {
+          console.log('Email matches, allowing payment verification for duplicate account');
+          // Use the payment found - same email, different user ID (duplicate account scenario)
+          payment = anyPayment;
+        } else {
+          return res.status(403).json({
+            error: 'Payment belongs to different user',
+            code: 'PAYMENT_USER_MISMATCH',
+            debug: {
+              orderId: razorpay_order_id,
+              expectedUserId: userId,
+              actualUserId: anyPayment.user_id,
+              emailMatch: paymentOwner?.email === req.user.email
+            }
+          });
+        }
+      } else {
+        // Use the payment found without user filter
+        payment = anyPayment;
+      }
     }
 
     // Check if payment is already verified
@@ -406,14 +493,15 @@ router.post('/verify-payment', authenticateUser, validatePaymentVerificationInpu
       });
     }
 
-    // Deactivate any other active subscriptions for this user
+    // Deactivate any other active subscriptions for this user (use the payment owner's user ID)
+    const subscriptionUserId = payment.user_id || userId;
     await supabase
       .from('subscriptions')
       .update({
         status: 'cancelled',
         updated_at: new Date().toISOString()
       })
-      .eq('user_id', userId)
+      .eq('user_id', subscriptionUserId)
       .eq('status', 'active')
       .neq('id', payment.subscription_id);
 
@@ -462,6 +550,329 @@ router.post('/verify-payment', authenticateUser, validatePaymentVerificationInpu
   }
 }));
 
+// GET /api/payments/test - Test endpoint to verify payments route is working
+router.get('/test', (req, res) => {
+  res.json({
+    message: 'Payments route is working',
+    timestamp: new Date().toISOString(),
+    endpoints: [
+      'POST /api/payments/create-order',
+      'POST /api/payments/verify-payment',
+      'GET /api/payments/status/:orderId',
+      'GET /api/payments/debug/:orderId'
+    ]
+  });
+});
+
+// GET /api/payments/test-db-relationship - Test database relationship fix
+router.get('/test-db-relationship/:orderId', asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    // Test the fixed database relationship query
+    const { data: payment, error } = await supabase
+      .from('payments')
+      .select(`
+        *,
+        subscriptions!payments_subscription_id_fkey (*)
+      `)
+      .eq('razorpay_order_id', orderId)
+      .single();
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        error: error.message,
+        code: error.code,
+        hint: error.hint
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Database relationship query works correctly',
+      payment: payment,
+      hasSubscription: !!payment.subscriptions
+    });
+
+  } catch (error) {
+    console.error('Test DB relationship error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}));
+
+// GET /api/payments/search/:orderId - Search for payment record without authentication (temporary debug)
+router.get('/search/:orderId', asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    // Search for payment record without user filter
+    const { data: payments, error } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('razorpay_order_id', orderId);
+
+    if (error) {
+      return res.status(500).json({
+        error: 'Database error',
+        details: error.message
+      });
+    }
+
+    res.json({
+      orderId,
+      found: payments.length > 0,
+      payments: payments,
+      count: payments.length
+    });
+
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({
+      error: 'Search error',
+      details: error.message
+    });
+  }
+}));
+
+// POST /api/payments/verify-payment-by-email - Verify payment by email match (for duplicate account scenarios)
+router.post('/verify-payment-by-email', authenticateUser, validatePaymentVerificationInput, asyncHandler(async (req, res) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  const userEmail = req.user.email;
+
+  try {
+    console.log('Payment verification by email:', {
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      userEmail: userEmail,
+      timestamp: new Date().toISOString()
+    });
+
+    // Get payment record and check if the email matches
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .select(`
+        *,
+        subscriptions!payments_subscription_id_fkey (*),
+        users!payments_user_id_fkey (email)
+      `)
+      .eq('razorpay_order_id', razorpay_order_id)
+      .single();
+
+    if (paymentError || !payment) {
+      return res.status(404).json({
+        error: 'Payment record not found',
+        code: 'PAYMENT_NOT_FOUND'
+      });
+    }
+
+    // Check if the email matches
+    if (payment.users.email !== userEmail) {
+      return res.status(403).json({
+        error: 'Payment belongs to different email address',
+        code: 'EMAIL_MISMATCH'
+      });
+    }
+
+    // Check if payment is already verified
+    if (payment.status === 'paid' && payment.verified_at) {
+      return res.json({
+        success: true,
+        message: 'Payment already verified',
+        payment: {
+          id: payment.id,
+          status: payment.status,
+          verifiedAt: payment.verified_at
+        },
+        subscription: {
+          id: payment.subscriptions.id,
+          status: payment.subscriptions.status,
+          planType: payment.subscriptions.plan_type
+        }
+      });
+    }
+
+    // Verify payment signature
+    const isSignatureValid = verifyPaymentSignature({
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    });
+
+    if (!isSignatureValid) {
+      // Update payment status to failed
+      await supabase
+        .from('payments')
+        .update({
+          status: 'failed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', payment.id);
+
+      return res.status(400).json({
+        error: 'Payment signature verification failed',
+        code: 'SIGNATURE_VERIFICATION_FAILED'
+      });
+    }
+
+    // Get additional payment details from Razorpay
+    const paymentDetailsResult = await getPaymentDetails(razorpay_payment_id);
+    let paymentMethod = null;
+    
+    if (paymentDetailsResult.success) {
+      paymentMethod = paymentDetailsResult.payment.method;
+    }
+
+    // Update payment record with verification details
+    const { error: paymentUpdateError } = await supabase
+      .from('payments')
+      .update({
+        razorpay_payment_id,
+        razorpay_signature,
+        status: 'paid',
+        payment_method: paymentMethod,
+        verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', payment.id);
+
+    if (paymentUpdateError) {
+      console.error('Error updating payment record:', paymentUpdateError);
+      return res.status(500).json({
+        error: 'Failed to update payment record',
+        code: 'PAYMENT_UPDATE_FAILED'
+      });
+    }
+
+    // Activate subscription
+    const { error: subscriptionUpdateError } = await supabase
+      .from('subscriptions')
+      .update({
+        status: 'active',
+        payment_id: payment.id,
+        payment_method: paymentMethod,
+        auto_renewal: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', payment.subscription_id);
+
+    if (subscriptionUpdateError) {
+      console.error('Error updating subscription:', subscriptionUpdateError);
+      return res.status(500).json({
+        error: 'Failed to activate subscription',
+        code: 'SUBSCRIPTION_UPDATE_FAILED'
+      });
+    }
+
+    // Deactivate any other active subscriptions for the payment owner
+    await supabase
+      .from('subscriptions')
+      .update({
+        status: 'cancelled',
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', payment.user_id)
+      .eq('status', 'active')
+      .neq('id', payment.subscription_id);
+
+    // Get updated subscription details
+    const { data: updatedSubscription, error: subscriptionFetchError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('id', payment.subscription_id)
+      .single();
+
+    if (subscriptionFetchError) {
+      console.error('Error fetching updated subscription:', subscriptionFetchError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Payment verified and subscription activated successfully (email match)',
+      payment: {
+        id: payment.id,
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: 'paid',
+        paymentMethod: paymentMethod,
+        verifiedAt: new Date().toISOString()
+      },
+      subscription: updatedSubscription ? {
+        id: updatedSubscription.id,
+        planType: updatedSubscription.plan_type,
+        status: updatedSubscription.status,
+        checksLimit: updatedSubscription.checks_limit,
+        checksUsed: updatedSubscription.checks_used,
+        currentPeriodStart: updatedSubscription.current_period_start,
+        currentPeriodEnd: updatedSubscription.current_period_end,
+        autoRenewal: updatedSubscription.auto_renewal
+      } : null,
+      note: 'Payment verified using email match due to duplicate account scenario'
+    });
+
+  } catch (error) {
+    console.error('Payment verification by email error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+}));
+
+// GET /api/payments/debug/:orderId - Debug payment record (temporary)
+router.get('/debug/:orderId', authenticateUser, asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const userId = req.user.id;
+
+  try {
+    // Get all payment records for this user
+    const { data: allPayments, error: allPaymentsError } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    // Get specific payment record
+    const { data: specificPayment, error: specificError } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('razorpay_order_id', orderId)
+      .eq('user_id', userId);
+
+    // Get payment record without user filter
+    const { data: anyPayment, error: anyError } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('razorpay_order_id', orderId);
+
+    res.json({
+      debug: true,
+      orderId,
+      userId,
+      allPayments: allPayments || [],
+      specificPayment: specificPayment || [],
+      anyPayment: anyPayment || [],
+      errors: {
+        allPaymentsError,
+        specificError,
+        anyError
+      }
+    });
+
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({
+      error: 'Debug error',
+      details: error.message
+    });
+  }
+}));
+
 // GET /api/payments/status/:orderId - Get payment status and subscription details
 router.get('/status/:orderId', authenticateUser, asyncHandler(async (req, res) => {
   const { orderId } = req.params;
@@ -473,7 +884,7 @@ router.get('/status/:orderId', authenticateUser, asyncHandler(async (req, res) =
       .from('payments')
       .select(`
         *,
-        subscriptions (*)
+        subscriptions!payments_subscription_id_fkey (*)
       `)
       .eq('razorpay_order_id', orderId)
       .eq('user_id', userId)
