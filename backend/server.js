@@ -364,12 +364,16 @@ app.get("/db-check", async (req, res) => {
   }
 });
 
+// Import contact routes
+import contactRoutes from './routes/contact.js';
+
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/contact", contactRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -16,6 +16,10 @@ import {
   Play,
   Menu,
   X,
+  Mail,
+  Phone,
+  MapPin,
+  Send,
 } from "lucide-react";
 
 const Landing = () => {
@@ -65,17 +69,23 @@ const Landing = () => {
               >
                 Features
               </a>
-              <a
-                href="#pricing"
+              <Link
+                to="/pricing"
                 className="text-gray-700 hover:text-[#3282B8] transition-colors font-medium"
               >
                 Pricing
-              </a>
-              <a
-                href="#about"
+              </Link>
+              <Link
+                to="/about"
                 className="text-gray-700 hover:text-[#3282B8] transition-colors font-medium"
               >
                 About
+              </Link>
+              <a
+                href="#contact"
+                className="text-gray-700 hover:text-[#3282B8] transition-colors font-medium"
+              >
+                Contact
               </a>
               <Link
                 to="/login"
@@ -117,17 +127,23 @@ const Landing = () => {
               >
                 Features
               </a>
-              <a
-                href="#pricing"
+              <Link
+                to="/pricing"
                 className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#3282B8] rounded-md font-medium"
               >
                 Pricing
-              </a>
-              <a
-                href="#about"
+              </Link>
+              <Link
+                to="/about"
                 className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#3282B8] rounded-md font-medium"
               >
                 About
+              </Link>
+              <a
+                href="#contact"
+                className="block px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#3282B8] rounded-md font-medium"
+              >
+                Contact
               </a>
               <Link
                 to="/login"
@@ -386,6 +402,95 @@ const Landing = () => {
             >
               Login to Dashboard
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Us Section */}
+      <section id="contact" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Get in Touch
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Have questions about PlagiaSure? We're here to help you protect academic integrity.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Contact Info */}
+            <div className="space-y-8">
+              <div className="flex items-start space-x-4">
+                <div className="bg-gradient-to-r from-[#3282B8] to-[#52DE97] p-3 rounded-lg">
+                  <Mail className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Us</h3>
+                  <p className="text-gray-600">support@plagiasure.in</p>
+                  <p className="text-gray-600">sales@plagiasure.in</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="bg-gradient-to-r from-[#3282B8] to-[#52DE97] p-3 rounded-lg">
+                  <Phone className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Call Us</h3>
+                  <p className="text-gray-600">+91 98765 43210</p>
+                  <p className="text-gray-600">Monday - Friday, 9 AM - 6 PM IST</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="bg-gradient-to-r from-[#3282B8] to-[#52DE97] p-3 rounded-lg">
+                  <MapPin className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Visit Us</h3>
+                  <p className="text-gray-600">
+                    Tech Park, Sector 18<br />
+                    Gurugram, Haryana 122015, India
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Contact Form */}
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">Quick Contact</h3>
+              <form className="space-y-4">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Your Name"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3282B8] focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Your Email"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3282B8] focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <textarea
+                    rows={4}
+                    placeholder="Your Message"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3282B8] focus:border-transparent"
+                  />
+                </div>
+                <Link
+                  to="/contact"
+                  className="w-full bg-gradient-to-r from-[#3282B8] to-[#52DE97] text-white py-3 px-6 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
+                >
+                  <Send className="w-5 h-5" />
+                  <span>Send Message</span>
+                </Link>
+              </form>
+            </div>
           </div>
         </div>
       </section>
