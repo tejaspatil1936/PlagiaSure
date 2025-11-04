@@ -230,9 +230,24 @@ router.get('/status', authenticateUser, async (req, res) => {
     }
 
     if (!subscription) {
+      // Get usage data for free users
+      const { data: lifetimeUsage } = await supabase
+        .from('user_usage')
+        .select('lifetime_usage_count, last_scan_at')
+        .eq('user_id', userId)
+        .order('lifetime_usage_count', { ascending: false })
+        .limit(1)
+        .single();
+
       return res.json({
         hasSubscription: false,
-        message: 'No subscription found'
+        message: 'No subscription found',
+        usage: {
+          lifetimeUsage: lifetimeUsage ? lifetimeUsage.lifetime_usage_count : 0,
+          lastScanAt: lifetimeUsage ? lifetimeUsage.last_scan_at : null,
+          freeLimit: 2,
+          remaining: Math.max(2 - (lifetimeUsage ? lifetimeUsage.lifetime_usage_count : 0), 0)
+        }
       });
     }
 
@@ -241,6 +256,23 @@ router.get('/status', authenticateUser, async (req, res) => {
     const periodEnd = subscription.current_period_end ? new Date(subscription.current_period_end) : null;
     const isActive = subscription.status === 'active' && (!periodEnd || periodEnd > now);
 
+    // Get usage data
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const { data: usageData } = await supabase
+      .from('user_usage')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('month_year', currentMonth)
+      .single();
+
+    const { data: lifetimeUsage } = await supabase
+      .from('user_usage')
+      .select('lifetime_usage_count')
+      .eq('user_id', userId)
+      .order('lifetime_usage_count', { ascending: false })
+      .limit(1)
+      .single();
+
     res.json({
       hasSubscription: true,
       subscription: {
@@ -248,6 +280,12 @@ router.get('/status', authenticateUser, async (req, res) => {
         isActive,
         plan: PLANS[subscription.plan_type],
         daysRemaining: isActive && periodEnd ? Math.ceil((periodEnd - now) / (1000 * 60 * 60 * 24)) : null
+      },
+      usage: {
+        monthlyUsage: usageData ? usageData.monthly_usage_count : 0,
+        lifetimeUsage: lifetimeUsage ? lifetimeUsage.lifetime_usage_count : 0,
+        lastScanAt: usageData ? usageData.last_scan_at : null,
+        currentMonth: currentMonth
       }
     });
 
