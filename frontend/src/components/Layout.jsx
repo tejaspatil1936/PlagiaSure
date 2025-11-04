@@ -285,7 +285,7 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout,
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="p-3 rounded-xl bg-[#2D4B7C] hover:bg-[#1A365D] transition-all duration-200 border border-white border-opacity-30 relative z-10 shadow-lg hover:shadow-xl hover:scale-110 active:scale-95"
+            className="p-3 rounded-xl bg-[#2D4B7C] hover:bg-[#1A365D] transition-all duration-200 border-opacity-30 relative z-10 shadow-lg hover:shadow-xl hover:scale-110 active:scale-95"
             title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {collapsed ? (
