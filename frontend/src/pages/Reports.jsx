@@ -678,7 +678,6 @@ const Reports = () => {
                     <div className="mx-auto w-24 h-24 bg-gradient-to-br from-[#2D4B7C] to-[#3282B8] rounded-2xl flex items-center justify-center shadow-lg">
                       <FileText className="h-12 w-12 text-white" />
                     </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-[#52DE97] rounded-full animate-pulse"></div>
                   </div>
                   <h3 className="mt-6 text-xl font-bold text-gray-900">No assignments yet</h3>
                   <p className="mt-2 text-gray-600 max-w-md mx-auto">Upload assignments to generate comprehensive analysis reports.</p>

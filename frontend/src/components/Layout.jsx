@@ -104,10 +104,10 @@ const Layout = ({ children }) => {
         <div className="sticky top-0 z-20 lg:hidden bg-white shadow-lg border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-4">
             <button
-              className="p-3 rounded-xl bg-gradient-to-r from-[#3282B8] to-[#3AB795] text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
+              className="p-3 rounded-xl bg-[#2D4B7C] hover:bg-[#3282B8] text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95 border border-white border-opacity-20"
               onClick={() => setSidebarOpen(true)}
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-6 w-6 text-white drop-shadow-sm" />
             </button>
             <div className="flex items-center space-x-3">
               <img 
@@ -139,7 +139,6 @@ const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onL
       {/* Mobile Header */}
       <div className="flex items-center h-20 flex-shrink-0 px-6 bg-gradient-to-r from-[#2D4B7C] via-[#3282B8] to-[#3AB795] relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-3xl -translate-y-16 translate-x-16 animate-pulse"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#52DE97] rounded-full blur-2xl translate-y-12 -translate-x-12 animate-float"></div>
         </div>
         
@@ -150,7 +149,6 @@ const MobileSidebarContent = ({ navigation, adminNavigation, location, user, onL
               alt="PlagiaSure Logo" 
               className="h-10 w-10 drop-shadow-lg"
             />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#52DE97] rounded-full animate-pulse"></div>
           </div>
           <div className="ml-4">
             <h1 className="text-xl font-bold text-white drop-shadow-sm">PlagiaSure</h1>
@@ -275,7 +273,6 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout,
               alt="PlagiaSure Logo" 
               className="h-10 w-10 drop-shadow-lg"
             />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#52DE97] rounded-full animate-pulse"></div>
           </div>
           {!collapsed && (
             <div className="ml-4">
@@ -288,7 +285,7 @@ const SidebarContent = ({ navigation, adminNavigation, location, user, onLogout,
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="p-3 rounded-xl bg-white bg-opacity-20 hover:bg-opacity-40 transition-all duration-200 backdrop-blur-sm border border-white border-opacity-40 relative z-10 shadow-lg hover:shadow-xl hover:scale-110 active:scale-95"
+            className="p-3 rounded-xl bg-[#2D4B7C] hover:bg-[#1A365D] transition-all duration-200 border border-white border-opacity-30 relative z-10 shadow-lg hover:shadow-xl hover:scale-110 active:scale-95"
             title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {collapsed ? (
