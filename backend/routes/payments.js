@@ -6,7 +6,8 @@ import {
   verifyPaymentSignature,
   verifyWebhookSignature,
   getPaymentDetails,
-  getRazorpayKeyId
+  getRazorpayKeyId,
+  getPaymentUrls
 } from '../services/razorpayService.js';
 
 const router = express.Router();
@@ -550,12 +551,47 @@ router.post('/verify-payment', authenticateUser, validatePaymentVerificationInpu
   }
 }));
 
+// GET /api/payments/config - Get payment configuration for frontend
+router.get('/config', (req, res) => {
+  try {
+    const paymentUrls = getPaymentUrls();
+    
+    res.json({
+      success: true,
+      config: {
+        currency: process.env.PAYMENT_CURRENCY || 'INR',
+        keyId: getRazorpayKeyId(),
+        urls: paymentUrls,
+        plans: Object.keys(SUBSCRIPTION_PLANS).reduce((acc, key) => {
+          if (key !== 'free') { // Don't include free plan in payment config
+            acc[key] = {
+              name: SUBSCRIPTION_PLANS[key].name,
+              price: SUBSCRIPTION_PLANS[key].price,
+              duration: SUBSCRIPTION_PLANS[key].duration,
+              checksLimit: SUBSCRIPTION_PLANS[key].checksLimit,
+              features: SUBSCRIPTION_PLANS[key].features
+            };
+          }
+          return acc;
+        }, {})
+      }
+    });
+  } catch (error) {
+    console.error('Error getting payment config:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get payment configuration'
+    });
+  }
+});
+
 // GET /api/payments/test - Test endpoint to verify payments route is working
 router.get('/test', (req, res) => {
   res.json({
     message: 'Payments route is working',
     timestamp: new Date().toISOString(),
     endpoints: [
+      'GET /api/payments/config',
       'POST /api/payments/create-order',
       'POST /api/payments/verify-payment',
       'GET /api/payments/status/:orderId',

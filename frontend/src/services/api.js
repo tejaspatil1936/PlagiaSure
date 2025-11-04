@@ -76,6 +76,7 @@ export const billingAPI = {
 
 // Payment API
 export const paymentAPI = {
+  getConfig: () => api.get('/api/payments/config'),
   createOrder: (data) => api.post('/api/payments/create-order', data),
   verifyPayment: (data) => api.post('/api/payments/verify-payment', data),
   getStatus: (orderId) => api.get(`/api/payments/status/${orderId}`),

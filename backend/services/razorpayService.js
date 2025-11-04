@@ -14,7 +14,7 @@ const getRazorpayInstance = () => {
       key_id: process.env.RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET,
     });
-    
+
   }
   return razorpay;
 };
@@ -155,6 +155,20 @@ const getRazorpayKeyId = () => {
   return process.env.RAZORPAY_KEY_ID;
 };
 
+/**
+ * Get payment URLs dynamically based on environment
+ * @returns {Object} Payment URLs object
+ */
+const getPaymentUrls = () => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  
+  return {
+    successUrl: `${frontendUrl}/payment/success`,
+    cancelUrl: `${frontendUrl}/payment/cancel`,
+    failureUrl: `${frontendUrl}/payment/failure`,
+  };
+};
+
 export {
   createOrder,
   verifyPaymentSignature,
@@ -162,4 +176,5 @@ export {
   getPaymentDetails,
   getOrderDetails,
   getRazorpayKeyId,
+  getPaymentUrls,
 };

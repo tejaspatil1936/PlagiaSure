@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Check, CreditCard, Clock, AlertCircle } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { createPaymentUrl } from "../../utils/paymentConfig";
 
 const PaymentModal = ({
   isOpen,
@@ -165,23 +166,18 @@ const PaymentModal = ({
           await verifyPayment(response);
         },
         modal: {
-          ondismiss: () => {
+          ondismiss: async () => {
             setLoading(false);
             setPaymentStatus("idle");
 
             // Redirect to failure page when user cancels payment
-            const failureUrl = new URL(
-              "/payment/failure",
-              window.location.origin
-            );
-            failureUrl.searchParams.set("error_code", "CANCELLED_BY_USER");
-            failureUrl.searchParams.set(
-              "error_description",
-              "Payment was cancelled by user"
-            );
-            failureUrl.searchParams.set("order_id", orderData.orderId || "");
-            failureUrl.searchParams.set("plan_type", selectedPlan);
-            window.location.href = failureUrl.toString();
+            const failureUrl = await createPaymentUrl("failure", {
+              error_code: "CANCELLED_BY_USER",
+              error_description: "Payment was cancelled by user",
+              order_id: orderData.orderId || "",
+              plan_type: selectedPlan,
+            });
+            window.location.href = failureUrl;
           },
         },
       };
@@ -195,15 +191,13 @@ const PaymentModal = ({
       setLoading(false);
 
       // Redirect to failure page for payment initiation errors
-      setTimeout(() => {
-        const failureUrl = new URL("/payment/failure", window.location.origin);
-        failureUrl.searchParams.set("error_code", "PAYMENT_FAILED");
-        failureUrl.searchParams.set(
-          "error_description",
-          error.message || "Failed to initiate payment"
-        );
-        failureUrl.searchParams.set("plan_type", selectedPlan);
-        window.location.href = failureUrl.toString();
+      setTimeout(async () => {
+        const failureUrl = await createPaymentUrl("failure", {
+          error_code: "PAYMENT_FAILED",
+          error_description: error.message || "Failed to initiate payment",
+          plan_type: selectedPlan,
+        });
+        window.location.href = failureUrl;
       }, 2000);
     }
   };
@@ -212,9 +206,12 @@ const PaymentModal = ({
     try {
       const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5001";
       const apiUrl = `${baseUrl}/api/payments/verify-payment`;
-      console.log('PaymentModal: Attempting to verify payment at:', apiUrl);
-      console.log('PaymentModal: Auth token:', localStorage.getItem("auth_token") ? 'Present' : 'Missing');
-      
+      console.log("PaymentModal: Attempting to verify payment at:", apiUrl);
+      console.log(
+        "PaymentModal: Auth token:",
+        localStorage.getItem("auth_token") ? "Present" : "Missing"
+      );
+
       const paymentData = {
         razorpay_order_id: paymentResponse.razorpay_order_id,
         razorpay_payment_id: paymentResponse.razorpay_payment_id,
@@ -231,9 +228,14 @@ const PaymentModal = ({
       });
 
       // If regular verification fails with 404 or 403, try email-based verification
-      if (!response.ok && (response.status === 404 || response.status === 403)) {
-        console.log('PaymentModal: Regular verification failed, trying email-based verification...');
-        
+      if (
+        !response.ok &&
+        (response.status === 404 || response.status === 403)
+      ) {
+        console.log(
+          "PaymentModal: Regular verification failed, trying email-based verification..."
+        );
+
         const emailApiUrl = `${baseUrl}/api/payments/verify-payment-by-email`;
         response = await fetch(emailApiUrl, {
           method: "POST",
@@ -246,20 +248,27 @@ const PaymentModal = ({
       }
 
       if (!response.ok) {
-        console.log('PaymentModal: Response not OK. Status:', response.status, 'StatusText:', response.statusText);
-        console.log('PaymentModal: Response headers:', [...response.headers.entries()]);
-        
+        console.log(
+          "PaymentModal: Response not OK. Status:",
+          response.status,
+          "StatusText:",
+          response.statusText
+        );
+        console.log("PaymentModal: Response headers:", [
+          ...response.headers.entries(),
+        ]);
+
         let errorData;
         try {
           errorData = await response.json();
-          console.log('PaymentModal: Error response body:', errorData);
+          console.log("PaymentModal: Error response body:", errorData);
         } catch (e) {
-          console.log('PaymentModal: Could not parse error response as JSON');
+          console.log("PaymentModal: Could not parse error response as JSON");
           const textResponse = await response.text();
-          console.log('PaymentModal: Error response text:', textResponse);
+          console.log("PaymentModal: Error response text:", textResponse);
           errorData = { message: textResponse || `HTTP ${response.status}` };
         }
-        
+
         throw new Error(errorData.message || "Payment verification failed");
       }
 
@@ -272,18 +281,13 @@ const PaymentModal = ({
       onPaymentSuccess?.(verificationData);
 
       // Redirect to success page with payment details
-      setTimeout(() => {
-        const successUrl = new URL("/payment/success", window.location.origin);
-        successUrl.searchParams.set(
-          "order_id",
-          paymentResponse.razorpay_order_id
-        );
-        successUrl.searchParams.set(
-          "payment_id",
-          paymentResponse.razorpay_payment_id
-        );
-        successUrl.searchParams.set("plan_type", selectedPlan);
-        window.location.href = successUrl.toString();
+      setTimeout(async () => {
+        const successUrl = await createPaymentUrl("success", {
+          order_id: paymentResponse.razorpay_order_id,
+          payment_id: paymentResponse.razorpay_payment_id,
+          plan_type: selectedPlan,
+        });
+        window.location.href = successUrl;
       }, 1500);
     } catch (error) {
       console.error("Payment verification failed:", error);
@@ -293,22 +297,14 @@ const PaymentModal = ({
       onPaymentFailure?.(error);
 
       // Redirect to failure page with error details
-      setTimeout(() => {
-        const failureUrl = new URL("/payment/failure", window.location.origin);
-        failureUrl.searchParams.set(
-          "error_code",
-          "PAYMENT_VERIFICATION_FAILED"
-        );
-        failureUrl.searchParams.set(
-          "error_description",
-          error.message || "Payment verification failed"
-        );
-        failureUrl.searchParams.set(
-          "order_id",
-          paymentResponse?.razorpay_order_id || ""
-        );
-        failureUrl.searchParams.set("plan_type", selectedPlan);
-        window.location.href = failureUrl.toString();
+      setTimeout(async () => {
+        const failureUrl = await createPaymentUrl("failure", {
+          error_code: "PAYMENT_VERIFICATION_FAILED",
+          error_description: error.message || "Payment verification failed",
+          order_id: paymentResponse?.razorpay_order_id || "",
+          plan_type: selectedPlan,
+        });
+        window.location.href = failureUrl;
       }, 2000);
     }
   };
