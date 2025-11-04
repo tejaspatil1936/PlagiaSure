@@ -18,6 +18,8 @@ import Reports from "./pages/Reports";
 import Subscription from "./pages/Subscription";
 import TestGoogleAuth from "./pages/TestGoogleAuth";
 import AuthDebug from "./components/AuthDebug";
+// Payment Pages
+import { PaymentSuccess, PaymentFailure } from "./components/Payment";
 // Policy Pages
 import PrivacyPolicy from "./pages/policies/PrivacyPolicy";
 import TermsConditions from "./pages/policies/TermsConditions";
@@ -135,6 +137,25 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            
+            {/* Payment Routes */}
+            <Route
+              path="/payment/success"
+              element={
+                <ProtectedRoute>
+                  <PaymentSuccess />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payment/failure"
+              element={
+                <ProtectedRoute>
+                  <PaymentFailure />
+                </ProtectedRoute>
+              }
+            />
+            
             {/* <Route path="/admin" element={
               <ProtectedRoute>
                 <Layout>

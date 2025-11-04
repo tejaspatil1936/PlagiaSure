@@ -154,6 +154,14 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
           ondismiss: () => {
             setLoading(false);
             setPaymentStatus('idle');
+            
+            // Redirect to failure page when user cancels payment
+            const failureUrl = new URL('/payment/failure', window.location.origin);
+            failureUrl.searchParams.set('error_code', 'CANCELLED_BY_USER');
+            failureUrl.searchParams.set('error_description', 'Payment was cancelled by user');
+            failureUrl.searchParams.set('order_id', orderData.orderId || '');
+            failureUrl.searchParams.set('plan_type', selectedPlan);
+            window.location.href = failureUrl.toString();
           }
         }
       };
@@ -166,6 +174,15 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
       setError(error.message || 'Failed to initiate payment');
       setPaymentStatus('failed');
       setLoading(false);
+      
+      // Redirect to failure page for payment initiation errors
+      setTimeout(() => {
+        const failureUrl = new URL('/payment/failure', window.location.origin);
+        failureUrl.searchParams.set('error_code', 'PAYMENT_FAILED');
+        failureUrl.searchParams.set('error_description', error.message || 'Failed to initiate payment');
+        failureUrl.searchParams.set('plan_type', selectedPlan);
+        window.location.href = failureUrl.toString();
+      }, 2000);
     }
   };
 
@@ -194,11 +211,17 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
       setPaymentStatus('success');
       setLoading(false);
       
-      // Call success callback after a brief delay to show success state
+      // Call success callback and redirect to success page
+      onPaymentSuccess?.(verificationData);
+      
+      // Redirect to success page with payment details
       setTimeout(() => {
-        onPaymentSuccess?.(verificationData);
-        onClose();
-      }, 2000);
+        const successUrl = new URL('/payment/success', window.location.origin);
+        successUrl.searchParams.set('order_id', paymentResponse.razorpay_order_id);
+        successUrl.searchParams.set('payment_id', paymentResponse.razorpay_payment_id);
+        successUrl.searchParams.set('plan_type', selectedPlan);
+        window.location.href = successUrl.toString();
+      }, 1500);
 
     } catch (error) {
       console.error('Payment verification failed:', error);
@@ -206,6 +229,16 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
       setPaymentStatus('failed');
       setLoading(false);
       onPaymentFailure?.(error);
+      
+      // Redirect to failure page with error details
+      setTimeout(() => {
+        const failureUrl = new URL('/payment/failure', window.location.origin);
+        failureUrl.searchParams.set('error_code', 'PAYMENT_VERIFICATION_FAILED');
+        failureUrl.searchParams.set('error_description', error.message || 'Payment verification failed');
+        failureUrl.searchParams.set('order_id', paymentResponse?.razorpay_order_id || '');
+        failureUrl.searchParams.set('plan_type', selectedPlan);
+        window.location.href = failureUrl.toString();
+      }, 2000);
     }
   };
 
