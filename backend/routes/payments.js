@@ -207,11 +207,14 @@ router.post('/create-order', authenticateUser, validateCreateOrderInput, asyncHa
       });
     }
 
-    // Create Razorpay order
+    // Create Razorpay order with short receipt (max 40 chars)
+    const timestamp = Date.now().toString().slice(-8); // Last 8 digits of timestamp
+    const shortReceipt = `s${subscription.id}_${timestamp}`.slice(0, 40); // Ensure max 40 chars
+    
     const orderData = {
       amount: plan.price,
       currency: process.env.PAYMENT_CURRENCY || 'INR',
-      receipt: `sub_${subscription.id}_${Date.now()}`,
+      receipt: shortReceipt,
       notes: {
         user_id: userId,
         user_email: userEmail,

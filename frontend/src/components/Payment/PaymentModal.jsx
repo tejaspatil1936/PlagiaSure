@@ -1,99 +1,106 @@
-import React, { useState, useEffect } from 'react';
-import { X, Check, CreditCard, Clock, AlertCircle } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import React, { useState, useEffect } from "react";
+import { X, Check, CreditCard, Clock, AlertCircle } from "lucide-react";
+import { cn } from "../../lib/utils";
 
-const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) => {
-  const [selectedPlan, setSelectedPlan] = useState('');
+const PaymentModal = ({
+  isOpen,
+  onClose,
+  onPaymentSuccess,
+  onPaymentFailure,
+}) => {
+  const [selectedPlan, setSelectedPlan] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState('idle'); // idle, processing, success, failed
+  const [error, setError] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("idle"); // idle, processing, success, failed
 
   // Plan configuration matching the backend design
   const SUBSCRIPTION_PLANS = {
     basic_monthly: {
-      name: 'Basic Plan (Monthly)',
+      name: "Basic Plan (Monthly)",
       price: 399,
       originalPrice: 399,
       duration: 1,
       checksLimit: 50,
       features: [
-        '50 reports per month',
-        'Basic AI detection',
-        'Plagiarism checking',
-        'Email support'
+        "50 reports per month",
+        "Basic AI detection",
+        "Plagiarism checking",
+        "Email support",
       ],
-      popular: false
+      popular: false,
     },
     basic_yearly: {
-      name: 'Basic Plan (Yearly)',
+      name: "Basic Plan (Yearly)",
       price: 3990,
       originalPrice: 4788, // 399 * 12
       duration: 12,
       checksLimit: 50,
       features: [
-        '50 reports per month',
-        'Basic AI detection',
-        'Plagiarism checking',
-        'Email support',
-        '2 months free'
+        "50 reports per month",
+        "Basic AI detection",
+        "Plagiarism checking",
+        "Email support",
+        "2 months free",
       ],
       popular: false,
-      savings: '17% off'
+      savings: "17% off",
     },
     pro_monthly: {
-      name: 'Pro Plan (Monthly)',
+      name: "Pro Plan (Monthly)",
       price: 599,
       originalPrice: 599,
       duration: 1,
       checksLimit: 200,
       features: [
-        '200 reports per month',
-        'Advanced AI detection',
-        'Detailed plagiarism reports',
-        'Priority support',
-        'Batch processing'
+        "200 reports per month",
+        "Advanced AI detection",
+        "Detailed plagiarism reports",
+        "Priority support",
+        "Batch processing",
       ],
-      popular: true
+      popular: true,
     },
     pro_yearly: {
-      name: 'Pro Plan (Yearly)',
+      name: "Pro Plan (Yearly)",
       price: 5990,
       originalPrice: 7188, // 599 * 12
       duration: 12,
       checksLimit: 200,
       features: [
-        '200 reports per month',
-        'Advanced AI detection',
-        'Detailed plagiarism reports',
-        'Priority support',
-        'Batch processing',
-        '2 months free'
+        "200 reports per month",
+        "Advanced AI detection",
+        "Detailed plagiarism reports",
+        "Priority support",
+        "Batch processing",
+        "2 months free",
       ],
       popular: false,
-      savings: '17% off'
-    }
+      savings: "17% off",
+    },
   };
 
   useEffect(() => {
     if (isOpen) {
       // Reset state when modal opens
-      setSelectedPlan('pro_monthly'); // Default to popular plan
-      setError('');
-      setPaymentStatus('idle');
+      setSelectedPlan("pro_monthly"); // Default to popular plan
+      setError("");
+      setPaymentStatus("idle");
       setLoading(false);
     }
   }, [isOpen]);
 
   useEffect(() => {
     // Load Razorpay script when component mounts
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     document.body.appendChild(script);
 
     return () => {
       // Cleanup script on unmount
-      const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      const existingScript = document.querySelector(
+        'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
+      );
       if (existingScript) {
         document.body.removeChild(existingScript);
       }
@@ -102,31 +109,36 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
 
   const handlePayment = async () => {
     if (!selectedPlan) {
-      setError('Please select a plan');
+      setError("Please select a plan");
       return;
     }
 
     setLoading(true);
-    setError('');
-    setPaymentStatus('processing');
+    setError("");
+    setPaymentStatus("processing");
 
     try {
       // Create order on backend
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payments/create-order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        body: JSON.stringify({
-          planType: selectedPlan,
-          currency: 'INR'
-        })
-      });
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:5001"
+        }/api/payments/create-order`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+          body: JSON.stringify({
+            planType: selectedPlan,
+            currency: "INR",
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create payment order');
+        throw new Error(errorData.message || "Failed to create payment order");
       }
 
       const orderData = await response.json();
@@ -136,15 +148,17 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
         key: orderData.key,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: 'PlagiaSure',
+        name: "PlagiaSure",
         description: SUBSCRIPTION_PLANS[selectedPlan].name,
         order_id: orderData.orderId,
         prefill: {
-          name: JSON.parse(localStorage.getItem('user_data') || '{}').name || '',
-          email: JSON.parse(localStorage.getItem('user_data') || '{}').email || ''
+          name:
+            JSON.parse(localStorage.getItem("user_data") || "{}").name || "",
+          email:
+            JSON.parse(localStorage.getItem("user_data") || "{}").email || "",
         },
         theme: {
-          color: '#4F46E5'
+          color: "#4F46E5",
         },
         handler: async (response) => {
           // Payment successful, verify on backend
@@ -153,34 +167,42 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
         modal: {
           ondismiss: () => {
             setLoading(false);
-            setPaymentStatus('idle');
-            
+            setPaymentStatus("idle");
+
             // Redirect to failure page when user cancels payment
-            const failureUrl = new URL('/payment/failure', window.location.origin);
-            failureUrl.searchParams.set('error_code', 'CANCELLED_BY_USER');
-            failureUrl.searchParams.set('error_description', 'Payment was cancelled by user');
-            failureUrl.searchParams.set('order_id', orderData.orderId || '');
-            failureUrl.searchParams.set('plan_type', selectedPlan);
+            const failureUrl = new URL(
+              "/payment/failure",
+              window.location.origin
+            );
+            failureUrl.searchParams.set("error_code", "CANCELLED_BY_USER");
+            failureUrl.searchParams.set(
+              "error_description",
+              "Payment was cancelled by user"
+            );
+            failureUrl.searchParams.set("order_id", orderData.orderId || "");
+            failureUrl.searchParams.set("plan_type", selectedPlan);
             window.location.href = failureUrl.toString();
-          }
-        }
+          },
+        },
       };
 
       const razorpay = new window.Razorpay(options);
       razorpay.open();
-
     } catch (error) {
-      console.error('Payment initiation failed:', error);
-      setError(error.message || 'Failed to initiate payment');
-      setPaymentStatus('failed');
+      console.error("Payment initiation failed:", error);
+      setError(error.message || "Failed to initiate payment");
+      setPaymentStatus("failed");
       setLoading(false);
-      
+
       // Redirect to failure page for payment initiation errors
       setTimeout(() => {
-        const failureUrl = new URL('/payment/failure', window.location.origin);
-        failureUrl.searchParams.set('error_code', 'PAYMENT_FAILED');
-        failureUrl.searchParams.set('error_description', error.message || 'Failed to initiate payment');
-        failureUrl.searchParams.set('plan_type', selectedPlan);
+        const failureUrl = new URL("/payment/failure", window.location.origin);
+        failureUrl.searchParams.set("error_code", "PAYMENT_FAILED");
+        failureUrl.searchParams.set(
+          "error_description",
+          error.message || "Failed to initiate payment"
+        );
+        failureUrl.searchParams.set("plan_type", selectedPlan);
         window.location.href = failureUrl.toString();
       }, 2000);
     }
@@ -188,55 +210,74 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
 
   const verifyPayment = async (paymentResponse) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payments/verify-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        body: JSON.stringify({
-          razorpay_order_id: paymentResponse.razorpay_order_id,
-          razorpay_payment_id: paymentResponse.razorpay_payment_id,
-          razorpay_signature: paymentResponse.razorpay_signature
-        })
-      });
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:5001"
+        }/api/payments/verify-payment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+          body: JSON.stringify({
+            razorpay_order_id: paymentResponse.razorpay_order_id,
+            razorpay_payment_id: paymentResponse.razorpay_payment_id,
+            razorpay_signature: paymentResponse.razorpay_signature,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Payment verification failed');
+        throw new Error(errorData.message || "Payment verification failed");
       }
 
       const verificationData = await response.json();
-      
-      setPaymentStatus('success');
+
+      setPaymentStatus("success");
       setLoading(false);
-      
+
       // Call success callback and redirect to success page
       onPaymentSuccess?.(verificationData);
-      
+
       // Redirect to success page with payment details
       setTimeout(() => {
-        const successUrl = new URL('/payment/success', window.location.origin);
-        successUrl.searchParams.set('order_id', paymentResponse.razorpay_order_id);
-        successUrl.searchParams.set('payment_id', paymentResponse.razorpay_payment_id);
-        successUrl.searchParams.set('plan_type', selectedPlan);
+        const successUrl = new URL("/payment/success", window.location.origin);
+        successUrl.searchParams.set(
+          "order_id",
+          paymentResponse.razorpay_order_id
+        );
+        successUrl.searchParams.set(
+          "payment_id",
+          paymentResponse.razorpay_payment_id
+        );
+        successUrl.searchParams.set("plan_type", selectedPlan);
         window.location.href = successUrl.toString();
       }, 1500);
-
     } catch (error) {
-      console.error('Payment verification failed:', error);
-      setError(error.message || 'Payment verification failed');
-      setPaymentStatus('failed');
+      console.error("Payment verification failed:", error);
+      setError(error.message || "Payment verification failed");
+      setPaymentStatus("failed");
       setLoading(false);
       onPaymentFailure?.(error);
-      
+
       // Redirect to failure page with error details
       setTimeout(() => {
-        const failureUrl = new URL('/payment/failure', window.location.origin);
-        failureUrl.searchParams.set('error_code', 'PAYMENT_VERIFICATION_FAILED');
-        failureUrl.searchParams.set('error_description', error.message || 'Payment verification failed');
-        failureUrl.searchParams.set('order_id', paymentResponse?.razorpay_order_id || '');
-        failureUrl.searchParams.set('plan_type', selectedPlan);
+        const failureUrl = new URL("/payment/failure", window.location.origin);
+        failureUrl.searchParams.set(
+          "error_code",
+          "PAYMENT_VERIFICATION_FAILED"
+        );
+        failureUrl.searchParams.set(
+          "error_description",
+          error.message || "Payment verification failed"
+        );
+        failureUrl.searchParams.set(
+          "order_id",
+          paymentResponse?.razorpay_order_id || ""
+        );
+        failureUrl.searchParams.set("plan_type", selectedPlan);
         window.location.href = failureUrl.toString();
       }, 2000);
     }
@@ -268,14 +309,14 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
         )}
 
         {/* Payment Status */}
-        {paymentStatus === 'processing' && (
+        {paymentStatus === "processing" && (
           <div className="mx-6 mt-4 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-md flex items-center">
             <Clock className="h-5 w-5 mr-2 animate-spin" />
             Processing payment...
           </div>
         )}
 
-        {paymentStatus === 'success' && (
+        {paymentStatus === "success" && (
           <div className="mx-6 mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center">
             <Check className="h-5 w-5 mr-2" />
             Payment successful! Redirecting...
@@ -301,11 +342,11 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
           <div className="mt-8 flex justify-center">
             <button
               onClick={handlePayment}
-              disabled={!selectedPlan || loading || paymentStatus === 'success'}
+              disabled={!selectedPlan || loading || paymentStatus === "success"}
               className={cn(
                 "px-8 py-3 rounded-lg font-medium text-white flex items-center space-x-2",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
-                selectedPlan && !loading && paymentStatus !== 'success'
+                selectedPlan && !loading && paymentStatus !== "success"
                   ? "bg-indigo-600 hover:bg-indigo-700"
                   : "bg-gray-400"
               )}
@@ -315,7 +356,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
                   <Clock className="h-5 w-5 animate-spin" />
                   <span>Processing...</span>
                 </>
-              ) : paymentStatus === 'success' ? (
+              ) : paymentStatus === "success" ? (
                 <>
                   <Check className="h-5 w-5" />
                   <span>Payment Successful</span>
@@ -324,7 +365,8 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, onPaymentFailure }) =
                 <>
                   <CreditCard className="h-5 w-5" />
                   <span>
-                    Pay ₹{selectedPlan ? SUBSCRIPTION_PLANS[selectedPlan].price : 0}
+                    Pay ₹
+                    {selectedPlan ? SUBSCRIPTION_PLANS[selectedPlan].price : 0}
                   </span>
                 </>
               )}
@@ -374,7 +416,9 @@ const PlanCard = ({ planKey, plan, selected, onSelect, disabled }) => {
       <div className="text-center">
         <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
         <div className="mt-2">
-          <span className="text-3xl font-bold text-gray-900">₹{plan.price}</span>
+          <span className="text-3xl font-bold text-gray-900">
+            ₹{plan.price}
+          </span>
           {plan.originalPrice > plan.price && (
             <span className="ml-2 text-lg text-gray-500 line-through">
               ₹{plan.originalPrice}
@@ -382,7 +426,7 @@ const PlanCard = ({ planKey, plan, selected, onSelect, disabled }) => {
           )}
         </div>
         <p className="text-sm text-gray-500">
-          {plan.duration === 1 ? 'per month' : 'per year'}
+          {plan.duration === 1 ? "per month" : "per year"}
         </p>
       </div>
 
