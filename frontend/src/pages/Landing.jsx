@@ -453,35 +453,35 @@ const Landing = () => {
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white">
+                  <Link to="/contact" className="hover:text-white">
                     Contact
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h3 className="font-semibold mb-4">Support</h3>
+              <h3 className="font-semibold mb-4">Legal</h3>
               <ul className="space-y-2 text-white/80">
                 <li>
-                  <a href="#" className="hover:text-white">
-                    Help Center
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
+                  <Link to="/privacy" className="hover:text-white">
                     Privacy Policy
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white">
-                    Terms of Service
-                  </a>
+                  <Link to="/terms" className="hover:text-white">
+                    Terms & Conditions
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white">
-                    Status
-                  </a>
+                  <Link to="/refund" className="hover:text-white">
+                    Refund Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/shipping" className="hover:text-white">
+                    Shipping Policy
+                  </Link>
                 </li>
               </ul>
             </div>

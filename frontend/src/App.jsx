@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import Landing from './pages/Landing';
@@ -12,6 +13,12 @@ import Reports from './pages/Reports';
 import Subscription from './pages/Subscription';
 import TestGoogleAuth from './pages/TestGoogleAuth';
 import AuthDebug from './components/AuthDebug';
+// Policy Pages
+import PrivacyPolicy from './pages/policies/PrivacyPolicy';
+import TermsConditions from './pages/policies/TermsConditions';
+import RefundPolicy from './pages/policies/RefundPolicy';
+import ContactUs from './pages/policies/ContactUs';
+import ShippingPolicy from './pages/policies/ShippingPolicy';
 // import Admin from './pages/Admin';
 import './App.css';
 
@@ -50,8 +57,9 @@ const PublicRoute = ({ children }) => {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
+      <HelmetProvider>
+        <AuthProvider>
+          <Router>
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={
@@ -110,6 +118,13 @@ function App() {
               </ProtectedRoute>
             } /> */}
             
+            {/* Policy Pages - Public Routes */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsConditions />} />
+            <Route path="/refund" element={<RefundPolicy />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/shipping" element={<ShippingPolicy />} />
+            
             {/* Landing Page */}
             <Route path="/" element={<Landing />} />
             
@@ -123,8 +138,9 @@ function App() {
               </div>
             } />
           </Routes>
-        </Router>
-      </AuthProvider>
+          </Router>
+        </AuthProvider>
+      </HelmetProvider>
     </QueryClientProvider>
   );
 }
