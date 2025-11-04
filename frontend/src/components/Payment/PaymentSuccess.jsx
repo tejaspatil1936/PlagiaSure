@@ -17,18 +17,18 @@ const PaymentSuccess = () => {
   const planType = searchParams.get('plan_type');
 
   useEffect(() => {
-    // Simulate loading payment details
+    // Load payment details from URL parameters
     const loadPaymentDetails = async () => {
       try {
-        // In a real implementation, you would fetch payment details from the API
-        // For now, we'll use the URL parameters
+        // Use real payment details from URL parameters
         setPaymentDetails({
-          orderId: orderId || 'order_' + Date.now(),
-          paymentId: paymentId || 'pay_' + Date.now(),
+          orderId: orderId,
+          paymentId: paymentId, // Only use real payment ID, don't generate fake ones
           planType: planType || 'pro_monthly',
-          amount: planType?.includes('basic') ? (planType.includes('yearly') ? 3990 : 399) : (planType?.includes('yearly') ? 5990 : 599),
+          amount: planType?.includes('basic') ? (planType.includes('yearly') ? 399000 : 39900) : (planType?.includes('yearly') ? 599000 : 59900),
           currency: 'INR',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          hasRealPaymentId: !!paymentId // Track if we have a real payment ID
         });
       } catch (error) {
         console.error('Failed to load payment details:', error);
@@ -57,104 +57,25 @@ const PaymentSuccess = () => {
 
   const handleDownloadReceipt = async () => {
     try {
-      // Download PDF invoice from our backend
-      if (paymentDetails?.paymentId) {
-        const response = await paymentAPI.downloadInvoice(paymentDetails.paymentId);
-        
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `invoice-${paymentDetails.paymentId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        return;
-      }
+      const response = await paymentAPI.downloadInvoice(paymentDetails.paymentId);
+      
+      // Create and download the PDF
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${paymentDetails.paymentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to download PDF invoice:', error);
+      
+      // Show user-friendly error message
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error occurred';
+      alert(`Failed to download invoice: ${errorMessage}`);
     }
-
-    // Fallback: Generate a custom receipt
-    const receiptData = {
-      orderId: paymentDetails?.orderId,
-      paymentId: paymentDetails?.paymentId,
-      planType: paymentDetails?.planType,
-      amount: paymentDetails?.amount,
-      currency: paymentDetails?.currency,
-      timestamp: paymentDetails?.timestamp,
-      status: 'Success'
-    };
-
-    const receiptHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Payment Receipt - PlagiaSure</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { text-align: center; border-bottom: 2px solid #3282B8; padding-bottom: 20px; margin-bottom: 30px; }
-        .logo { color: #2D4B7C; font-size: 24px; font-weight: bold; }
-        .receipt-title { color: #3282B8; font-size: 20px; margin: 10px 0; }
-        .details { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .row { display: flex; justify-content: space-between; margin: 10px 0; }
-        .label { color: #666; }
-        .value { font-weight: bold; color: #333; }
-        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
-        .success { color: #52DE97; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="logo">🔍 PlagiaSure</div>
-        <div class="receipt-title">Payment Receipt</div>
-    </div>
-    
-    <div class="details">
-        <div class="row">
-            <span class="label">Order ID:</span>
-            <span class="value">${receiptData.orderId}</span>
-        </div>
-        <div class="row">
-            <span class="label">Payment ID:</span>
-            <span class="value">${receiptData.paymentId}</span>
-        </div>
-        <div class="row">
-            <span class="label">Plan:</span>
-            <span class="value">${getPlanDisplayName(receiptData.planType)}</span>
-        </div>
-        <div class="row">
-            <span class="label">Amount:</span>
-            <span class="value">₹${(receiptData.amount / 100).toFixed(0)}</span>
-        </div>
-        <div class="row">
-            <span class="label">Date:</span>
-            <span class="value">${new Date(receiptData.timestamp).toLocaleString()}</span>
-        </div>
-        <div class="row">
-            <span class="label">Status:</span>
-            <span class="value success">${receiptData.status}</span>
-        </div>
-    </div>
-    
-    <div class="footer">
-        <p>Thank you for choosing PlagiaSure!</p>
-        <p>Advanced AI & Plagiarism Detection Platform</p>
-    </div>
-</body>
-</html>
-    `;
-
-    const blob = new Blob([receiptHTML], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `receipt-${receiptData.orderId}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const getPlanDisplayName = (planType) => {
@@ -266,13 +187,15 @@ const PaymentSuccess = () => {
 
             {/* Action Buttons */}
             <div className="space-y-4">
-              <button
-                onClick={handleDownloadReceipt}
-                className="w-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 py-4 px-6 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 flex items-center justify-center space-x-3 font-semibold shadow-md hover:shadow-lg"
-              >
-                <Download className="h-5 w-5" />
-                <span>Download Invoice</span>
-              </button>
+              {paymentDetails?.hasRealPaymentId && (
+                <button
+                  onClick={handleDownloadReceipt}
+                  className="w-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 py-4 px-6 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 flex items-center justify-center space-x-3 font-semibold shadow-md hover:shadow-lg"
+                >
+                  <Download className="h-5 w-5" />
+                  <span>Download Invoice</span>
+                </button>
+              )}
 
               <button
                 onClick={() => navigate('/dashboard')}
