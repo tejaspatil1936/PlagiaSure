@@ -1,20 +1,9 @@
 import React from "react";
-import { Helmet } from "react-helmet-async";
 import PolicyLayout from "./PolicyLayout";
 
 const TermsConditions = () => {
   return (
-    <>
-      <Helmet>
-        <title>Terms & Conditions - PlagiaSure</title>
-        <meta
-          name="description"
-          content="PlagiaSure Terms & Conditions - Understand the terms of service for using our plagiarism detection platform."
-        />
-        <meta name="robots" content="index, follow" />
-      </Helmet>
-      
-      <PolicyLayout title="Terms & Conditions" lastUpdated="January 2025">
+    <PolicyLayout title="Terms & Conditions" lastUpdated="January 2025">
         <div className="space-y-6">
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Acceptance of Terms</h2>
@@ -138,7 +127,6 @@ const TermsConditions = () => {
           </section>
         </div>
       </PolicyLayout>
-    </>
   );
 };
 

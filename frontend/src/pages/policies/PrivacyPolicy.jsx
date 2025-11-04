@@ -1,20 +1,9 @@
 import React from "react";
-import { Helmet } from "react-helmet-async";
 import PolicyLayout from "./PolicyLayout";
 
 const PrivacyPolicy = () => {
   return (
-    <>
-      <Helmet>
-        <title>Privacy Policy - PlagiaSure</title>
-        <meta
-          name="description"
-          content="PlagiaSure Privacy Policy - Learn how we collect, use, and protect your personal information."
-        />
-        <meta name="robots" content="index, follow" />
-      </Helmet>
-      
-      <PolicyLayout title="Privacy Policy" lastUpdated="January 2025">
+    <PolicyLayout title="Privacy Policy" lastUpdated="January 2025">
         <div className="space-y-6">
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Information We Collect</h2>
@@ -108,7 +97,6 @@ const PrivacyPolicy = () => {
           </section>
         </div>
       </PolicyLayout>
-    </>
   );
 };
 

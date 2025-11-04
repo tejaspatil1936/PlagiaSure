@@ -1,20 +1,9 @@
 import React from "react";
-import { Helmet } from "react-helmet-async";
 import PolicyLayout from "./PolicyLayout";
 
 const ShippingPolicy = () => {
   return (
-    <>
-      <Helmet>
-        <title>Shipping Policy - PlagiaSure</title>
-        <meta
-          name="description"
-          content="PlagiaSure Shipping Policy - Learn about our digital service delivery and access policies."
-        />
-        <meta name="robots" content="index, follow" />
-      </Helmet>
-      
-      <PolicyLayout title="Shipping Policy" lastUpdated="January 2025">
+    <PolicyLayout title="Shipping Policy" lastUpdated="January 2025">
         <div className="space-y-6">
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Digital Service Delivery</h2>
@@ -145,7 +134,6 @@ const ShippingPolicy = () => {
           </section>
         </div>
       </PolicyLayout>
-    </>
   );
 };
 

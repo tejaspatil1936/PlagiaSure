@@ -1,21 +1,10 @@
 import React from "react";
-import { Helmet } from "react-helmet-async";
 import { Mail, Phone, MapPin, Clock, MessageCircle, Users } from "lucide-react";
 import PolicyLayout from "./PolicyLayout";
 
 const ContactUs = () => {
   return (
-    <>
-      <Helmet>
-        <title>Contact Us - PlagiaSure</title>
-        <meta
-          name="description"
-          content="Contact PlagiaSure - Get in touch with our support team for help with plagiarism detection services."
-        />
-        <meta name="robots" content="index, follow" />
-      </Helmet>
-      
-      <PolicyLayout title="Contact Us" lastUpdated="January 2025">
+    <PolicyLayout title="Contact Us" lastUpdated="January 2025">
         <div className="space-y-8">
           <section>
             <p className="text-lg text-gray-700 mb-8">
@@ -163,7 +152,6 @@ const ContactUs = () => {
           </section>
         </div>
       </PolicyLayout>
-    </>
   );
 };
 

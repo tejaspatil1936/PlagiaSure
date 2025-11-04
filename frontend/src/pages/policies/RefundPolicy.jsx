@@ -1,20 +1,9 @@
 import React from "react";
-import { Helmet } from "react-helmet-async";
 import PolicyLayout from "./PolicyLayout";
 
 const RefundPolicy = () => {
   return (
-    <>
-      <Helmet>
-        <title>Cancellation & Refund Policy - PlagiaSure</title>
-        <meta
-          name="description"
-          content="PlagiaSure Cancellation & Refund Policy - Learn about our subscription cancellation and refund procedures."
-        />
-        <meta name="robots" content="index, follow" />
-      </Helmet>
-      
-      <PolicyLayout title="Cancellation & Refund Policy" lastUpdated="January 2025">
+    <PolicyLayout title="Cancellation & Refund Policy" lastUpdated="January 2025">
         <div className="space-y-6">
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Subscription Cancellation</h2>
@@ -125,7 +114,6 @@ const RefundPolicy = () => {
           </section>
         </div>
       </PolicyLayout>
-    </>
   );
 };
 

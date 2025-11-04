@@ -1,33 +1,38 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { HelmetProvider } from 'react-helmet-async';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Layout from './components/Layout';
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
-import Assignments from './pages/Assignments';
-import Reports from './pages/Reports';
-import Subscription from './pages/Subscription';
-import TestGoogleAuth from './pages/TestGoogleAuth';
-import AuthDebug from './components/AuthDebug';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Layout from "./components/Layout";
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/Dashboard";
+import Assignments from "./pages/Assignments";
+import Reports from "./pages/Reports";
+import Subscription from "./pages/Subscription";
+import TestGoogleAuth from "./pages/TestGoogleAuth";
+import AuthDebug from "./components/AuthDebug";
 // Policy Pages
-import PrivacyPolicy from './pages/policies/PrivacyPolicy';
-import TermsConditions from './pages/policies/TermsConditions';
-import RefundPolicy from './pages/policies/RefundPolicy';
-import ContactUs from './pages/policies/ContactUs';
-import ShippingPolicy from './pages/policies/ShippingPolicy';
+import PrivacyPolicy from "./pages/policies/PrivacyPolicy";
+import TermsConditions from "./pages/policies/TermsConditions";
+import RefundPolicy from "./pages/policies/RefundPolicy";
+import ContactUs from "./pages/policies/ContactUs";
+import ShippingPolicy from "./pages/policies/ShippingPolicy";
 // import Admin from './pages/Admin';
-import './App.css';
+import "./App.css";
 
 const queryClient = new QueryClient();
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -35,14 +40,14 @@ const ProtectedRoute = ({ children }) => {
       </div>
     );
   }
-  
+
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 // Public Route Component (redirect if authenticated)
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -50,97 +55,119 @@ const PublicRoute = ({ children }) => {
       </div>
     );
   }
-  
+
   return !isAuthenticated ? children : <Navigate to="/dashboard" />;
 };
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <HelmetProvider>
-        <AuthProvider>
-          <Router>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            } />
-            <Route path="/signup" element={
-              <PublicRoute>
-                <Signup />
-              </PublicRoute>
-            } />
-            <Route path="/test-google" element={<TestGoogleAuth />} />
-            
-            {/* Protected Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/assignments" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Assignments />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Reports />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/reports/:id" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Reports />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/subscription" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Subscription />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            {/* <Route path="/admin" element={
+      <AuthProvider>
+        <Router>
+            <Routes>
+              {/* Public Routes */}
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <Login />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                path="/signup"
+                element={
+                  <PublicRoute>
+                    <Signup />
+                  </PublicRoute>
+                }
+              />
+              <Route path="/test-google" element={<TestGoogleAuth />} />
+
+              {/* Protected Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/assignments"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Assignments />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Reports />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports/:id"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Reports />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/subscription"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Subscription />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              {/* <Route path="/admin" element={
               <ProtectedRoute>
                 <Layout>
                   <Admin />
                 </Layout>
               </ProtectedRoute>
             } /> */}
-            
-            {/* Policy Pages - Public Routes */}
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsConditions />} />
-            <Route path="/refund" element={<RefundPolicy />} />
-            <Route path="/contact" element={<ContactUs />} />
-            <Route path="/shipping" element={<ShippingPolicy />} />
-            
-            {/* Landing Page */}
-            <Route path="/" element={<Landing />} />
-            
-            {/* 404 fallback */}
-            <Route path="*" element={
-              <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                  <h1 className="text-4xl font-bold text-gray-900">404</h1>
-                  <p className="text-gray-600">Page not found</p>
-                </div>
-              </div>
-            } />
-          </Routes>
-          </Router>
-        </AuthProvider>
-      </HelmetProvider>
+
+              {/* Policy Pages - Public Routes */}
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsConditions />} />
+              <Route path="/refund" element={<RefundPolicy />} />
+              <Route path="/contact" element={<ContactUs />} />
+              <Route path="/shipping" element={<ShippingPolicy />} />
+
+              {/* Landing Page */}
+              <Route path="/" element={<Landing />} />
+
+              {/* 404 fallback */}
+              <Route
+                path="*"
+                element={
+                  <div className="min-h-screen flex items-center justify-center">
+                    <div className="text-center">
+                      <h1 className="text-4xl font-bold text-gray-900">404</h1>
+                      <p className="text-gray-600">Page not found</p>
+                    </div>
+                  </div>
+                }
+              />
+            </Routes>
+        </Router>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
