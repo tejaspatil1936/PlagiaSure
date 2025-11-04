@@ -12,7 +12,7 @@ import {
   TrendingUp,
   Users
 } from 'lucide-react';
-import { formatDate, getScoreColor } from '../lib/utils';
+import { formatDate, getScoreColor, cn } from '../lib/utils';
 import BrandedLoading from '../components/BrandedLoading';
 
 const Dashboard = () => {
@@ -86,45 +86,98 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 bg-gradient-to-br from-gray-50 via-white to-blue-50 min-h-screen p-6">
       {/* Header */}
-      <div className="flex items-center space-x-4">
-        <img 
-          src="/plagiasure.png" 
-          alt="PlagiaSure Logo" 
-          className="h-12 w-12"
-        />
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">PlagiaSure Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Welcome back, {user?.email} • Advanced AI & Plagiarism Detection
-          </p>
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#2D4B7C] via-[#3282B8] to-[#3AB795] rounded-2xl p-8 shadow-2xl">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full blur-3xl -translate-y-20 translate-x-20 animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#52DE97] rounded-full blur-2xl translate-y-16 -translate-x-16 animate-float"></div>
+          <div className="absolute top-1/2 right-1/4 w-6 h-6 bg-white opacity-40 rounded-full animate-ping"></div>
+          <div className="absolute top-1/4 right-1/2 w-4 h-4 bg-[#52DE97] opacity-50 rounded-full animate-bounce"></div>
+        </div>
+        
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="flex items-center space-x-6">
+            <div className="relative">
+              <div className="p-4 bg-white bg-opacity-20 rounded-2xl backdrop-blur-sm border border-white border-opacity-30 shadow-lg">
+                <img 
+                  src="/plagiasure.png" 
+                  alt="PlagiaSure Logo" 
+                  className="h-12 w-12 drop-shadow-lg"
+                />
+              </div>
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#52DE97] rounded-full animate-pulse"></div>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white drop-shadow-sm">Welcome Back!</h1>
+              <p className="mt-2 text-white text-opacity-90 text-lg font-medium">
+                {user?.email} • Advanced AI & Plagiarism Detection Suite
+              </p>
+              <div className="mt-3 flex items-center space-x-4 text-sm text-white text-opacity-80">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                  <span>System Online</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                  <span>Premium Features Active</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="hidden md:block">
+            <div className="text-right text-white text-opacity-90">
+              <p className="text-sm font-medium">Today's Date</p>
+              <p className="text-lg font-bold">{new Date().toLocaleDateString()}</p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Subscription Status */}
       {subscription && (
-        <div className={`rounded-lg p-4 ${
+        <div className={cn(
+          "rounded-2xl p-6 shadow-lg border backdrop-blur-sm relative overflow-hidden",
           subscription.isActive 
-            ? 'bg-green-50 border border-green-200' 
-            : 'bg-yellow-50 border border-yellow-200'
-        }`}>
-          <div className="flex items-center">
-            {subscription.isActive ? (
-              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-            ) : (
-              <Clock className="h-5 w-5 text-yellow-500 mr-2" />
-            )}
-            <div>
-              <p className="font-medium">
-                {subscription.isActive ? 'Active Subscription' : 'Subscription Pending'}
+            ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
+            : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'
+        )}>
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white to-transparent opacity-30 rounded-full blur-2xl -translate-y-16 translate-x-16"></div>
+          
+          <div className="flex items-center relative z-10">
+            <div className={cn(
+              "p-3 rounded-xl shadow-md",
+              subscription.isActive ? 'bg-green-500' : 'bg-yellow-500'
+            )}>
+              {subscription.isActive ? (
+                <CheckCircle className="h-6 w-6 text-white" />
+              ) : (
+                <Clock className="h-6 w-6 text-white" />
+              )}
+            </div>
+            <div className="ml-4 flex-1">
+              <p className="text-lg font-bold text-gray-900">
+                {subscription.isActive ? 'Premium Subscription Active' : 'Subscription Under Review'}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 mt-1">
                 {subscription.isActive 
-                  ? `${subscription.checks_used}/${subscription.checks_limit === -1 ? '∞' : subscription.checks_limit} checks used`
-                  : 'Your subscription request is being reviewed by an administrator'
+                  ? `${subscription.checks_used}/${subscription.checks_limit === -1 ? '∞' : subscription.checks_limit} AI checks used this month`
+                  : 'Your premium access request is being processed by our team'
                 }
               </p>
+              {subscription.isActive && (
+                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: subscription.checks_limit === -1 ? '100%' : 
+                             `${Math.min((subscription.checks_used / subscription.checks_limit) * 100, 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -276,24 +329,61 @@ const Dashboard = () => {
 
 const StatCard = ({ title, value, icon: Icon, color }) => {
   const colorClasses = {
-    blue: 'text-[#3282B8] bg-[#3282B8]/10',
-    green: 'text-[#52DE97] bg-[#52DE97]/10',
-    yellow: 'text-[#3AB795] bg-[#3AB795]/10',
-    purple: 'text-[#2D4B7C] bg-[#2D4B7C]/10',
-    red: 'text-red-600 bg-red-100'
+    blue: {
+      icon: 'text-[#3282B8]',
+      bg: 'bg-gradient-to-br from-[#3282B8]/10 to-[#3282B8]/20',
+      border: 'border-[#3282B8]/20',
+      glow: 'shadow-[#3282B8]/20'
+    },
+    green: {
+      icon: 'text-[#52DE97]',
+      bg: 'bg-gradient-to-br from-[#52DE97]/10 to-[#52DE97]/20',
+      border: 'border-[#52DE97]/20',
+      glow: 'shadow-[#52DE97]/20'
+    },
+    yellow: {
+      icon: 'text-[#3AB795]',
+      bg: 'bg-gradient-to-br from-[#3AB795]/10 to-[#3AB795]/20',
+      border: 'border-[#3AB795]/20',
+      glow: 'shadow-[#3AB795]/20'
+    },
+    purple: {
+      icon: 'text-[#2D4B7C]',
+      bg: 'bg-gradient-to-br from-[#2D4B7C]/10 to-[#2D4B7C]/20',
+      border: 'border-[#2D4B7C]/20',
+      glow: 'shadow-[#2D4B7C]/20'
+    }
   };
 
+  const colors = colorClasses[color];
+
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center">
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="h-6 w-6" />
+    <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden group">
+      {/* Background decoration */}
+      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-gray-100 to-transparent opacity-50 rounded-full blur-xl -translate-y-12 translate-x-12 group-hover:scale-150 transition-transform duration-500"></div>
+      
+      <div className="flex items-center relative z-10">
+        <div className={cn(
+          "p-4 rounded-2xl shadow-lg border transition-all duration-300 group-hover:scale-110",
+          colors.bg,
+          colors.border
+        )}>
+          <Icon className={cn("h-7 w-7", colors.icon)} />
         </div>
-        <div className="ml-4">
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <div className="ml-6 flex-1">
+          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
         </div>
       </div>
+      
+      {/* Animated accent line */}
+      <div className={cn(
+        "absolute bottom-0 left-0 h-1 bg-gradient-to-r transition-all duration-500 group-hover:h-2",
+        color === 'blue' && 'from-[#3282B8] to-[#3AB795]',
+        color === 'green' && 'from-[#52DE97] to-[#3AB795]',
+        color === 'yellow' && 'from-[#3AB795] to-[#52DE97]',
+        color === 'purple' && 'from-[#2D4B7C] to-[#3282B8]'
+      )}></div>
     </div>
   );
 };

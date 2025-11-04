@@ -550,13 +550,28 @@ const Reports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50 py-8">
       {/* Header */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Reports</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          View plagiarism and AI detection analysis results
-        </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        <div className="relative overflow-hidden bg-gradient-to-r from-[#2D4B7C] via-[#3282B8] to-[#52DE97] rounded-2xl p-8 shadow-2xl">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full blur-3xl -translate-y-20 translate-x-20 animate-pulse"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#52DE97] rounded-full blur-2xl translate-y-16 -translate-x-16 animate-float"></div>
+          </div>
+          
+          <div className="relative z-10 flex items-center space-x-6">
+            <div className="p-4 bg-white bg-opacity-20 rounded-2xl backdrop-blur-sm border border-white border-opacity-30 shadow-lg">
+              <BarChart3 className="h-8 w-8 text-white drop-shadow-sm" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white drop-shadow-sm">Analysis Reports</h1>
+              <p className="mt-2 text-white text-opacity-90 text-lg font-medium">
+                View comprehensive AI detection and plagiarism analysis results
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Loading and Error States */}
@@ -582,80 +597,110 @@ const Reports = () => {
       {/* Assignments List */}
       {!loading && !error && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <ul className="divide-y divide-gray-200">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            <div className="divide-y divide-gray-100">
               {assignments.map((assignment) => {
                 const report = getReportForAssignment(assignment.id);
                 return (
-                  <li key={assignment.id}>
-                    <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
+                  <div key={assignment.id} className="p-6 hover:bg-gradient-to-r hover:from-gray-50 hover:to-purple-50 transition-all duration-200 group">
+                    <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-medium text-gray-900 truncate">
-                          {assignment.assignment_title}
-                        </h3>
-                        <div className="mt-2 flex items-center text-sm text-gray-500">
-                          <FileText className="flex-shrink-0 mr-1.5 h-4 w-4" />
-                          <p>{assignment.file_name}</p>
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500">
-                          <p>Student: {assignment.student_name} | Course: {assignment.course_name}</p>
+                        <div className="flex items-center space-x-4">
+                          <div className="p-3 bg-gradient-to-br from-[#2D4B7C] to-[#3282B8] rounded-xl shadow-md group-hover:scale-110 transition-transform duration-200">
+                            <FileText className="h-6 w-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-xl font-bold text-gray-900 truncate group-hover:text-[#3282B8] transition-colors duration-200">
+                              {assignment.assignment_title}
+                            </h3>
+                            <div className="mt-2 flex items-center text-sm text-gray-600 space-x-4">
+                              <span className="flex items-center">
+                                <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                                {assignment.file_name}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex items-center text-sm text-gray-600 space-x-4">
+                              <span className="flex items-center">
+                                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                                <span className="font-medium text-[#3282B8]">Student:</span> {assignment.student_name}
+                              </span>
+                              <span className="flex items-center">
+                                <div className="w-2 h-2 bg-purple-400 rounded-full mr-2"></div>
+                                <span className="font-medium text-[#3AB795]">Course:</span> {assignment.course_name}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <div className="ml-6 flex-shrink-0">
                         {report ? (
                           <Link
                             to={`/reports/${report.id}`}
-                            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                            className="group relative overflow-hidden bg-gradient-to-r from-[#3282B8] to-[#52DE97] text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                           >
-                            View Report
+                            <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                            <div className="relative z-10 flex items-center">
+                              <BarChart3 className="h-4 w-4 mr-2" />
+                              View Report
+                            </div>
                           </Link>
                         ) : (
                           <button
                             onClick={() => generateReport(assignment.id)}
                             disabled={generating[assignment.id]}
                             className={cn(
-                              "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white",
+                              "group relative overflow-hidden font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105",
                               generating[assignment.id]
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-green-600 hover:bg-green-700"
+                                ? "bg-gray-400 cursor-not-allowed text-white"
+                                : "bg-gradient-to-r from-[#52DE97] to-[#3AB795] text-white hover:from-[#3AB795] hover:to-[#52DE97]"
                             )}
                           >
-                            {generating[assignment.id] ? (
-                              <>
-                                <Clock className="h-4 w-4 mr-2 animate-spin" />
-                                Generating...
-                              </>
-                            ) : (
-                              <>
-                                <Play className="h-4 w-4 mr-2" />
-                                Generate Report
-                              </>
-                            )}
+                            <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                            <div className="relative z-10 flex items-center">
+                              {generating[assignment.id] ? (
+                                <>
+                                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                  Generating...
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="h-4 w-4 mr-2" />
+                                  Generate Report
+                                </>
+                              )}
+                            </div>
                           </button>
                         )}
                       </div>
                     </div>
-                  </li>
+                  </div>
                 );
               })}
               {assignments.length === 0 && (
-                <li className="px-4 py-8">
-                  <div className="text-center">
-                    <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No assignments yet</h3>
-                    <p className="mt-1 text-sm text-gray-500">Upload assignments to generate reports.</p>
-                    <div className="mt-6">
-                      <Link
-                        to="/assignments/upload"
-                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-                      >
-                        Upload Assignment
-                      </Link>
+                <div className="p-12 text-center">
+                  <div className="relative">
+                    <div className="mx-auto w-24 h-24 bg-gradient-to-br from-[#2D4B7C] to-[#3282B8] rounded-2xl flex items-center justify-center shadow-lg">
+                      <FileText className="h-12 w-12 text-white" />
                     </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-[#52DE97] rounded-full animate-pulse"></div>
                   </div>
-                </li>
+                  <h3 className="mt-6 text-xl font-bold text-gray-900">No assignments yet</h3>
+                  <p className="mt-2 text-gray-600 max-w-md mx-auto">Upload assignments to generate comprehensive analysis reports.</p>
+                  <div className="mt-8">
+                    <Link
+                      to="/assignments"
+                      className="group relative overflow-hidden bg-gradient-to-r from-[#3282B8] to-[#52DE97] text-white font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                      <div className="relative z-10 flex items-center">
+                        <Upload className="h-5 w-5 mr-3" />
+                        Upload Assignment
+                      </div>
+                    </Link>
+                  </div>
+                </div>
               )}
-            </ul>
+            </div>
           </div>
         </div>
       )}
