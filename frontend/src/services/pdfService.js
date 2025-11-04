@@ -27,262 +27,245 @@ export const generateInvoicePDF = (invoiceData) => {
   const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;
 
-  // Add page border
-  doc.setDrawColor(224, 224, 224);
-  doc.setLineWidth(0.5);
-  doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
-
-  // Header background (simulate gradient with rectangles)
+  // Modern minimalist header
   doc.setFillColor(45, 75, 124); // Dark blue
-  doc.rect(0, 0, pageWidth, 60, "F");
+  doc.rect(0, 0, pageWidth, 65, "F");
 
-  doc.setFillColor(50, 130, 184, 0.8); // Mid blue with transparency effect
-  doc.rect(0, 0, pageWidth, 60, "F");
+  // Subtle gradient overlay
+  doc.setFillColor(50, 130, 184);
+  doc.setGState(new doc.GState({ opacity: 0.6 }));
+  doc.rect(0, 0, pageWidth, 65, "F");
+  doc.setGState(new doc.GState({ opacity: 1 }));
 
-  // Company name and info
+  // Company branding - clean and modern
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
+  doc.setFontSize(32);
   doc.setFont("helvetica", "bold");
-  doc.text("PlagiaSure", 20, 25);
+  doc.text("PlagiaSure", 25, 32);
 
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text(company.tagline, 20, 35);
-  doc.text(`${company.email} | ${company.website}`, 20, 45);
+  doc.text("Advanced AI & Plagiarism Detection Platform", 25, 44);
+  doc.text(`${company.email} • ${company.website}`, 25, 54);
 
-  // Invoice title (right side)
+  // Invoice card - modern floating design
+  const cardX = pageWidth - 90;
+  doc.setFillColor(255, 255, 255, 0.2);
+  doc.roundedRect(cardX, 12, 80, 42, 4, 4, "F");
+
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("INVOICE", pageWidth - 60, 25);
+  doc.text("INVOICE", cardX + 6, 26);
 
-  // Invoice number with bright green
-  doc.setTextColor(82, 222, 151); // Bright green
   doc.setFontSize(9);
-  doc.text(`#${payment.id.slice(-8)}`, pageWidth - 60, 35);
-
-  // Date and status
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text(`#${payment.id.slice(-8)}`, cardX + 6, 34);
   doc.text(
-    `Date: ${new Date(payment.createdAt).toLocaleDateString("en-IN")}`,
-    pageWidth - 60,
+    `${new Date(payment.createdAt).toLocaleDateString("en-IN")}`,
+    cardX + 6,
     42
   );
 
-  doc.setTextColor(82, 222, 151); // Bright green
+  doc.setTextColor(82, 222, 151);
   doc.setFont("helvetica", "bold");
-  doc.text("Status: PAID", pageWidth - 60, 49);
+  doc.text("PAID", cardX + 6, 50);
 
-  // Reset text color for body
+  // Reset for body content
   doc.setTextColor(51, 51, 51);
 
-  // From section
-  let yPos = 80;
+  // Billing information with modern card design
+  let yPos = 85;
+
+  // From card - clean design
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(25, yPos, 75, 50, 6, 6, "FD");
+
+  doc.setTextColor(45, 75, 124);
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("FROM:", 20, yPos);
-
-  yPos += 10;
-  doc.setTextColor(45, 75, 124); // Dark blue
-  doc.setFontSize(10);
-  doc.text("PlagiaSure Technologies", 20, yPos);
+  doc.text("FROM", 32, yPos + 15);
 
   doc.setTextColor(51, 51, 51);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  yPos += 8;
-  doc.text("AI Detection & Plagiarism Prevention", 20, yPos);
-  yPos += 6;
-  doc.text(`Email: ${company.email}`, 20, yPos);
-  yPos += 6;
-  doc.text(`Website: ${company.website}`, 20, yPos);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("PlagiaSure Technologies", 32, yPos + 26);
 
-  // Bill To section
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text("AI Detection & Plagiarism Prevention", 32, yPos + 35);
+  doc.text(`${company.email}`, 32, yPos + 43);
+
+  // To card - matching design
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(110, yPos, 75, 50, 6, 6, "FD");
+
+  doc.setTextColor(45, 75, 124);
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(51, 51, 51);
-  doc.text("BILL TO:", 120, 80);
-
-  doc.setTextColor(45, 75, 124); // Dark blue
-  doc.setFontSize(10);
-  doc.text(user.email, 120, 90);
+  doc.text("BILL TO", 117, yPos + 15);
 
   doc.setTextColor(51, 51, 51);
-  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text(user.email, 117, yPos + 26);
+
   doc.setFontSize(9);
-  doc.text(user.schoolName || "Educational Institution", 120, 98);
-  doc.text(`Customer ID: ${user.userId}`, 120, 106);
+  doc.setFont("helvetica", "normal");
+  doc.text(user.schoolName || "Educational Institution", 117, yPos + 35);
+  doc.text(`Customer ID: ${user.userId.slice(-8)}`, 117, yPos + 43);
 
-  // Service table
-  yPos = 130;
+  // Service details - modern table design
+  yPos += 70;
 
-  // Table header
-  doc.setFillColor(50, 130, 184); // Mid blue
-  doc.rect(20, yPos, pageWidth - 40, 15, "F");
+  // Table header with rounded corners
+  doc.setFillColor(45, 75, 124);
+  doc.roundedRect(25, yPos, pageWidth - 50, 20, 4, 4, "F");
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text("DESCRIPTION", 25, yPos + 10);
-  doc.text("PLAN", 100, yPos + 10);
-  doc.text("AMOUNT", 150, yPos + 10);
+  doc.text("SERVICE DESCRIPTION", 32, yPos + 13);
+  doc.text("PLAN", 125, yPos + 13);
+  doc.text("AMOUNT", 160, yPos + 13);
 
-  // Table row
-  yPos += 15;
-  doc.setFillColor(250, 250, 250);
-  doc.rect(20, yPos, pageWidth - 40, 25, "F");
+  // Service row - clean background
+  yPos += 20;
+  doc.setFillColor(253, 253, 253);
+  doc.rect(25, yPos, pageWidth - 50, 40, "F");
 
+  // Add subtle border
+  doc.setDrawColor(240, 240, 240);
+  doc.setLineWidth(0.5);
+  doc.rect(25, yPos, pageWidth - 50, 40, "S");
+
+  // Service details with better typography
+  doc.setTextColor(51, 51, 51);
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("PlagiaSure Premium Subscription", 32, yPos + 15);
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(107, 114, 128);
+  doc.text("• Advanced AI content detection", 32, yPos + 24);
+  doc.text("• Comprehensive plagiarism analysis", 32, yPos + 32);
+
+  // Plan name with better styling
   doc.setTextColor(51, 51, 51);
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("PlagiaSure Premium Subscription", 25, yPos + 8);
+  doc.text(planNames[payment.planType] || "Premium", 125, yPos + 22);
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text("Advanced AI Detection & Plagiarism Analysis", 25, yPos + 15);
-  doc.text("Full access to premium features and reports", 25, yPos + 22);
-
-  // Plan type
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text(
-    planNames[payment.planType] || "Premium Subscription",
-    100,
-    yPos + 12
-  );
-
-  // Amount
-  doc.setTextColor(82, 222, 151); // Bright green
-  doc.setFontSize(12);
+  // Amount with emphasis and proper currency
+  doc.setTextColor(82, 222, 151);
+  doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.text(
     `Rs. ${(payment.amount / 100).toLocaleString("en-IN")}`,
-    150,
-    yPos + 12
+    160,
+    yPos + 22
   );
 
-  // Payment details section
-  yPos += 40;
-  doc.setFillColor(248, 249, 250);
-  doc.setDrawColor(221, 221, 221);
-  doc.rect(20, yPos, pageWidth - 40, 50, "FD");
+  // Payment details in modern card
+  yPos += 60;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(25, yPos, pageWidth - 50, 65, 6, 6, "FD");
 
-  doc.setTextColor(45, 75, 124); // Dark blue
-  doc.setFontSize(12);
+  doc.setTextColor(45, 75, 124);
+  doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
-  doc.text("PAYMENT DETAILS", 25, yPos + 12);
+  doc.text("PAYMENT DETAILS", 32, yPos + 18);
 
-  // Payment info in two columns
-  const paymentInfo = [
-    ["Payment ID:", payment.id],
-    ["Order ID:", payment.orderId],
-    ["Payment Method:", payment.paymentMethod],
-    [
-      "Transaction Date:",
-      new Date(payment.createdAt).toLocaleDateString("en-IN"),
-    ],
-    ["Status:", "COMPLETED"],
-    ["Currency:", payment.currency],
+  // Payment info in organized grid with proper text wrapping
+  const paymentDetails = [
+    ["Payment ID", payment.id.slice(-12)], // Truncate long IDs
+    ["Order ID", payment.orderId.slice(-12)], // Truncate long IDs
+    ["Method", payment.paymentMethod],
+    ["Date", new Date(payment.createdAt).toLocaleDateString("en-IN")],
+    ["Status", "COMPLETED"],
+    ["Currency", payment.currency],
   ];
 
-  doc.setTextColor(102, 102, 102);
+  doc.setTextColor(107, 114, 128);
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
 
-  // Left column
-  paymentInfo.slice(0, 3).forEach(([label, value], index) => {
-    const y = yPos + 25 + index * 8;
-    doc.text(label, 25, y);
+  paymentDetails.forEach(([label, value], index) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = col === 0 ? 32 : 125;
+    const y = yPos + 30 + row * 12;
+
+    doc.text(`${label}:`, x, y);
     doc.setTextColor(51, 51, 51);
     doc.setFont("helvetica", "bold");
-    doc.text(value, 65, y);
-    doc.setTextColor(102, 102, 102);
+
+    // Handle long text by truncating if needed
+    const maxWidth = 35;
+    let displayValue = value;
+    if (doc.getTextWidth(value) > maxWidth) {
+      displayValue = value.substring(0, 15) + "...";
+    }
+
+    doc.text(displayValue, x + 35, y);
+    doc.setTextColor(107, 114, 128);
     doc.setFont("helvetica", "normal");
   });
 
-  // Right column
-  paymentInfo.slice(3).forEach(([label, value], index) => {
-    const y = yPos + 25 + index * 8;
-    doc.text(label, 120, y);
-    doc.setTextColor(51, 51, 51);
-    doc.setFont("helvetica", "bold");
-    doc.text(value, 160, y);
-    doc.setTextColor(102, 102, 102);
-    doc.setFont("helvetica", "normal");
-  });
-
-  // Total amount box - positioned properly
-  yPos += 30; // Reduced spacing
-  const boxWidth = 90;
-  const boxX = pageWidth - boxWidth - 20;
-
-  doc.setFillColor(82, 222, 151); // Bright green
-  doc.rect(boxX, yPos, boxWidth, 25, "F");
+  // Total amount - prominent modern design
+  yPos += 85;
+  doc.setFillColor(82, 222, 151);
+  doc.roundedRect(pageWidth - 115, yPos, 90, 35, 6, 6, "F");
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text("TOTAL AMOUNT PAID:", boxX + 5, yPos + 10);
+  doc.text("TOTAL PAID", pageWidth - 110, yPos + 15);
 
-  doc.setFontSize(14);
+  doc.setFontSize(18);
   doc.text(
     `Rs. ${(payment.amount / 100).toLocaleString("en-IN")}`,
-    boxX + 5,
-    yPos + 20
+    pageWidth - 110,
+    yPos + 28
   );
 
-  // Thank you section - with proper spacing
-  yPos += 35; // Reduced spacing from total box
-  doc.setFillColor(58, 183, 149, 0.1); // Teal with transparency
-  doc.setDrawColor(58, 183, 149, 0.3);
-  doc.rect(20, yPos, pageWidth - 40, 30, "FD"); // Increased height
-
-  doc.setTextColor(45, 75, 124); // Dark blue
-  doc.setFontSize(12);
+  // Thank you message - clean and professional
+  yPos += 55;
+  doc.setTextColor(45, 75, 124);
+  doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  const thankYouText = "Thank you for choosing PlagiaSure!";
-  const textWidth = doc.getTextWidth(thankYouText);
-  doc.text(thankYouText, (pageWidth - textWidth) / 2, yPos + 12);
+  const thankText = "Thank you for choosing PlagiaSure!";
+  const thankWidth = doc.getTextWidth(thankText);
+  doc.text(thankText, (pageWidth - thankWidth) / 2, yPos);
 
-  doc.setTextColor(51, 51, 51);
-  doc.setFontSize(9);
+  doc.setTextColor(107, 114, 128);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  const benefitText =
-    "Your subscription gives you access to advanced AI detection and plagiarism analysis tools.";
-  const benefitWidth = doc.getTextWidth(benefitText);
-  doc.text(benefitText, (pageWidth - benefitWidth) / 2, yPos + 22);
+  const subText =
+    "Your subscription includes premium AI detection and comprehensive plagiarism analysis.";
+  const subWidth = doc.getTextWidth(subText);
+  doc.text(subText, (pageWidth - subWidth) / 2, yPos + 15);
 
-  // Footer - positioned dynamically with proper spacing
-  yPos += 25; // Reduced space after thank you section
+  // Modern footer - minimal and clean
+  yPos += 35;
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.5);
+  doc.line(25, yPos, pageWidth - 25, yPos);
 
-  // Ensure footer doesn't go beyond page bounds
-  const minFooterY = pageHeight - 35;
-  if (yPos > minFooterY) {
-    yPos = minFooterY;
-  }
-
-  doc.setDrawColor(221, 221, 221);
-  doc.line(20, yPos, pageWidth - 20, yPos);
-
-  doc.setTextColor(102, 102, 102);
-  doc.setFontSize(7);
+  doc.setTextColor(107, 114, 128);
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
 
-  const footerText1 =
-    "This invoice was generated automatically by PlagiaSure Invoice System.";
-  const footer1Width = doc.getTextWidth(footerText1);
-  doc.text(footerText1, (pageWidth - footer1Width) / 2, yPos + 8);
-
-  const footerText2 = `Generated on ${new Date().toLocaleString(
+  const footerText = `Generated on ${new Date().toLocaleDateString(
     "en-IN"
-  )} | For support: ${company.email}`;
-  const footer2Width = doc.getTextWidth(footerText2);
-  doc.text(footerText2, (pageWidth - footer2Width) / 2, yPos + 15);
-
-  const footerText3 =
-    "PlagiaSure - Advanced AI & Plagiarism Detection Platform";
-  const footer3Width = doc.getTextWidth(footerText3);
-  doc.text(footerText3, (pageWidth - footer3Width) / 2, yPos + 22);
+  )} • PlagiaSure Invoice System • ${company.email}`;
+  const footerWidth = doc.getTextWidth(footerText);
+  doc.text(footerText, (pageWidth - footerWidth) / 2, yPos + 12);
 
   return doc;
 };
