@@ -64,78 +64,78 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-            <Routes>
-              {/* Public Routes */}
-              <Route
-                path="/login"
-                element={
-                  <PublicRoute>
-                    <Login />
-                  </PublicRoute>
-                }
-              />
-              <Route
-                path="/signup"
-                element={
-                  <PublicRoute>
-                    <Signup />
-                  </PublicRoute>
-                }
-              />
-              <Route path="/test-google" element={<TestGoogleAuth />} />
+          <Routes>
+            {/* Public Routes */}
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <PublicRoute>
+                  <Signup />
+                </PublicRoute>
+              }
+            />
+            <Route path="/test-google" element={<TestGoogleAuth />} />
 
-              {/* Protected Routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/assignments"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Assignments />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/reports"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Reports />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/reports/:id"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Reports />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/subscription"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Subscription />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              {/* <Route path="/admin" element={
+            {/* Protected Routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assignments"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Assignments />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Reports />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Reports />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/subscription"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Subscription />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            {/* <Route path="/admin" element={
               <ProtectedRoute>
                 <Layout>
                   <Admin />
@@ -143,29 +143,29 @@ function App() {
               </ProtectedRoute>
             } /> */}
 
-              {/* Policy Pages - Public Routes */}
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/terms" element={<TermsConditions />} />
-              <Route path="/refund" element={<RefundPolicy />} />
-              <Route path="/contact" element={<ContactUs />} />
-              <Route path="/shipping" element={<ShippingPolicy />} />
+            {/* Policy Pages - Public Routes */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsConditions />} />
+            <Route path="/refund" element={<RefundPolicy />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/shipping" element={<ShippingPolicy />} />
 
-              {/* Landing Page */}
-              <Route path="/" element={<Landing />} />
+            {/* Landing Page */}
+            <Route path="/" element={<Landing />} />
 
-              {/* 404 fallback */}
-              <Route
-                path="*"
-                element={
-                  <div className="min-h-screen flex items-center justify-center">
-                    <div className="text-center">
-                      <h1 className="text-4xl font-bold text-gray-900">404</h1>
-                      <p className="text-gray-600">Page not found</p>
-                    </div>
+            {/* 404 fallback */}
+            <Route
+              path="*"
+              element={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="text-center">
+                    <h1 className="text-4xl font-bold text-gray-900">404</h1>
+                    <p className="text-gray-600">Page not found</p>
                   </div>
-                }
-              />
-            </Routes>
+                </div>
+              }
+            />
+          </Routes>
         </Router>
       </AuthProvider>
     </QueryClientProvider>

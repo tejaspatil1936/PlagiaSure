@@ -10,6 +10,7 @@ import authRoutes from "./routes/auth.js";
 import assignmentRoutes from "./routes/assignments.js";
 import reportRoutes from "./routes/reports.js";
 import billingRoutes from "./routes/billing.js";
+import paymentRoutes from "./routes/payments.js";
 
 // Load environment variables
 dotenv.config();
@@ -362,6 +363,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/billing", billingRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

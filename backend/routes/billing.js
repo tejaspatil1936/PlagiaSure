@@ -4,25 +4,81 @@ import { authenticateUser } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Subscription plans (for reference)
+// Helper function to calculate subscription period
+const calculateSubscriptionPeriod = (planType, customDuration = null) => {
+  const plan = PLANS[planType];
+  if (!plan) return null;
+
+  const now = new Date();
+  const duration = customDuration || plan.duration;
+
+  if (duration === 0) {
+    // Permanent plan (like free)
+    return {
+      start: now.toISOString(),
+      end: null
+    };
+  }
+
+  const periodEnd = new Date();
+  periodEnd.setMonth(periodEnd.getMonth() + duration);
+
+  return {
+    start: now.toISOString(),
+    end: periodEnd.toISOString()
+  };
+};
+
+// Subscription plans with new pricing structure
 const PLANS = {
-  basic: {
-    name: 'Basic Plan',
-    price: '$29.99/month',
-    checks_per_month: 100,
-    features: ['100 checks per month', 'Basic AI detection', 'Plagiarism checking', 'Email support']
+  free: {
+    name: 'Free Plan',
+    price: 0,
+    priceDisplay: 'Free',
+    duration: 0, // Permanent
+    checksLimit: 2,
+    features: ['2 scans only', 'Basic plagiarism checking', 'Limited AI detection'],
+    restrictions: ['Watermarked reports', 'No export options', 'Basic support only']
   },
-  pro: {
-    name: 'Pro Plan',
-    price: '$49.99/month',
-    checks_per_month: 500,
-    features: ['500 checks per month', 'Advanced AI detection', 'Detailed plagiarism reports', 'Priority support', 'Batch processing']
+  basic_monthly: {
+    name: 'Basic Plan (Monthly)',
+    price: 39900, // ₹399 in paise
+    priceDisplay: '₹399/month',
+    duration: 1, // months
+    checksLimit: 50,
+    features: ['50 reports per month', 'Basic AI detection', 'Plagiarism checking', 'Email support', 'Report history access'],
+    restrictions: ['No batch processing', 'Limited export options']
   },
-  enterprise: {
-    name: 'Enterprise Plan',
-    price: '$99.99/month',
-    checks_per_month: -1, // Unlimited
-    features: ['Unlimited checks', 'Custom AI models', 'API access', 'Dedicated support', 'Custom integrations']
+  basic_yearly: {
+    name: 'Basic Plan (Yearly)',
+    price: 399000, // ₹3990 in paise (₹399 x 10 months - 2 months free)
+    priceDisplay: '₹3,990/year',
+    originalPrice: 479880, // ₹399 x 12 months
+    discount: '2 months free',
+    duration: 12, // months
+    checksLimit: 50,
+    features: ['50 reports per month', 'Basic AI detection', 'Plagiarism checking', 'Email support', 'Report history access', '2 months free'],
+    restrictions: ['No batch processing', 'Limited export options']
+  },
+  pro_monthly: {
+    name: 'Pro Plan (Monthly)',
+    price: 59900, // ₹599 in paise
+    priceDisplay: '₹599/month',
+    duration: 1, // months
+    checksLimit: 200,
+    features: ['200 reports per month', 'Advanced AI detection', 'Detailed plagiarism reports', 'Priority support', 'Batch processing', 'Full export options (PDF, Word)'],
+    restrictions: []
+  },
+  pro_yearly: {
+    name: 'Pro Plan (Yearly)',
+    price: 599000, // ₹5990 in paise (₹599 x 10 months - 2 months free)
+    priceDisplay: '₹5,990/year',
+    originalPrice: 718800, // ₹599 x 12 months
+    discount: '2 months free',
+    duration: 12, // months
+    checksLimit: 200,
+    features: ['200 reports per month', 'Advanced AI detection', 'Detailed plagiarism reports', 'Priority support', 'Batch processing', 'Full export options (PDF, Word)', '2 months free'],
+    restrictions: []
   }
 };
 
@@ -33,7 +89,20 @@ router.get('/plans', (req, res) => {
   });
 });
 
-// Request subscription (manual approval)
+// Get specific plan details
+router.get('/plans/:planType', (req, res) => {
+  const { planType } = req.params;
+  
+  if (!PLANS[planType]) {
+    return res.status(404).json({ error: 'Plan not found' });
+  }
+
+  res.json({
+    plan: PLANS[planType]
+  });
+});
+
+// Request subscription (with payment integration)
 router.post('/request-subscription', authenticateUser, async (req, res) => {
   try {
     const { planType, message } = req.body;
@@ -60,7 +129,41 @@ router.post('/request-subscription', authenticateUser, async (req, res) => {
       });
     }
 
-    // Create subscription request
+    const plan = PLANS[planType];
+
+    // Handle free plan - activate immediately
+    if (planType === 'free' || plan.price === 0) {
+      const { data: subscriptionRequest, error: dbError } = await supabase
+        .from('subscriptions')
+        .insert([
+          {
+            user_id: userId,
+            plan_type: planType,
+            status: 'active',
+            checks_used: 0,
+            checks_limit: plan.checksLimit,
+            current_period_start: new Date().toISOString(),
+            current_period_end: null, // Free plan doesn't expire
+            created_at: new Date().toISOString(),
+            approved_at: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('Database subscription creation error:', dbError);
+        return res.status(500).json({ error: 'Failed to create free subscription' });
+      }
+
+      return res.status(201).json({
+        message: 'Free plan activated successfully!',
+        subscription: subscriptionRequest,
+        requiresPayment: false
+      });
+    }
+
+    // For paid plans, create pending subscription that requires payment
     const { data: subscriptionRequest, error: dbError } = await supabase
       .from('subscriptions')
       .insert([
@@ -69,7 +172,7 @@ router.post('/request-subscription', authenticateUser, async (req, res) => {
           plan_type: planType,
           status: 'pending',
           checks_used: 0,
-          checks_limit: PLANS[planType].checks_per_month,
+          checks_limit: plan.checksLimit,
           request_message: message || '',
           requested_at: new Date().toISOString(),
           created_at: new Date().toISOString()
@@ -83,9 +186,23 @@ router.post('/request-subscription', authenticateUser, async (req, res) => {
       return res.status(500).json({ error: 'Failed to create subscription request' });
     }
 
+    // For paid plans, return payment information
     res.status(201).json({
-      message: 'Subscription request submitted successfully. An admin will review your request.',
-      subscription: subscriptionRequest
+      message: 'Subscription created. Payment required to activate.',
+      subscription: subscriptionRequest,
+      requiresPayment: true,
+      plan: {
+        name: plan.name,
+        price: plan.price,
+        priceDisplay: plan.priceDisplay,
+        duration: plan.duration,
+        features: plan.features
+      },
+      paymentInfo: {
+        amount: plan.price,
+        currency: 'INR',
+        planType: planType
+      }
     });
 
   } catch (error) {
@@ -140,6 +257,83 @@ router.get('/status', authenticateUser, async (req, res) => {
   }
 });
 
+// Activate subscription after successful payment
+router.post('/activate-subscription', authenticateUser, async (req, res) => {
+  try {
+    const { subscriptionId, paymentId } = req.body;
+    const userId = req.user.id;
+
+    if (!subscriptionId) {
+      return res.status(400).json({ error: 'Subscription ID is required' });
+    }
+
+    // Get the pending subscription
+    const { data: subscription, error: fetchError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('id', subscriptionId)
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .single();
+
+    if (fetchError || !subscription) {
+      return res.status(404).json({ error: 'Pending subscription not found' });
+    }
+
+    const plan = PLANS[subscription.plan_type];
+    if (!plan) {
+      return res.status(400).json({ error: 'Invalid plan type' });
+    }
+
+    // Calculate period dates based on plan duration
+    const now = new Date();
+    const periodEnd = new Date();
+    if (plan.duration > 0) {
+      periodEnd.setMonth(periodEnd.getMonth() + plan.duration);
+    } else {
+      // For permanent plans, set no end date
+      periodEnd = null;
+    }
+
+    // Activate the subscription
+    const updateData = {
+      status: 'active',
+      current_period_start: now.toISOString(),
+      current_period_end: periodEnd ? periodEnd.toISOString() : null,
+      approved_at: now.toISOString()
+    };
+
+    // Add payment reference if provided
+    if (paymentId) {
+      updateData.payment_id = paymentId;
+    }
+
+    const { data: updatedSubscription, error: updateError } = await supabase
+      .from('subscriptions')
+      .update(updateData)
+      .eq('id', subscriptionId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Database update error:', updateError);
+      return res.status(500).json({ error: 'Failed to activate subscription' });
+    }
+
+    res.json({
+      message: 'Subscription activated successfully',
+      subscription: {
+        ...updatedSubscription,
+        plan: plan
+      }
+    });
+
+  } catch (error) {
+    console.error('Activate subscription error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Cancel subscription request (only for pending requests)
 router.post('/cancel-request', authenticateUser, async (req, res) => {
   try {
@@ -181,6 +375,155 @@ router.post('/cancel-request', authenticateUser, async (req, res) => {
   }
 });
 
+// Cancel active subscription
+router.post('/cancel-subscription', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { reason } = req.body;
+
+    // Get active subscription
+    const { data: subscription, error: fetchError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single();
+
+    if (fetchError || !subscription) {
+      return res.status(404).json({ error: 'No active subscription found' });
+    }
+
+    // Cancel the subscription
+    const { data: updatedSubscription, error: updateError } = await supabase
+      .from('subscriptions')
+      .update({
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        cancellation_reason: reason || 'User requested cancellation'
+      })
+      .eq('id', subscription.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Database update error:', updateError);
+      return res.status(500).json({ error: 'Failed to cancel subscription' });
+    }
+
+    res.json({
+      message: 'Subscription cancelled successfully',
+      subscription: updatedSubscription
+    });
+
+  } catch (error) {
+    console.error('Cancel subscription error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Change subscription plan (upgrade/downgrade)
+router.post('/change-plan', authenticateUser, async (req, res) => {
+  try {
+    const { newPlanType } = req.body;
+    const userId = req.user.id;
+
+    if (!newPlanType || !PLANS[newPlanType]) {
+      return res.status(400).json({ error: 'Invalid plan type' });
+    }
+
+    // Get current active subscription
+    const { data: currentSubscription, error: fetchError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single();
+
+    if (fetchError || !currentSubscription) {
+      return res.status(404).json({ error: 'No active subscription found' });
+    }
+
+    const newPlan = PLANS[newPlanType];
+    const currentPlan = PLANS[currentSubscription.plan_type];
+
+    // Handle downgrade to free plan
+    if (newPlanType === 'free') {
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({
+          plan_type: newPlanType,
+          checks_limit: newPlan.checksLimit,
+          current_period_end: null, // Free plan doesn't expire
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentSubscription.id);
+
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        return res.status(500).json({ error: 'Failed to change plan' });
+      }
+
+      return res.json({
+        message: 'Plan changed to Free successfully',
+        subscription: {
+          ...currentSubscription,
+          plan_type: newPlanType,
+          checks_limit: newPlan.checksLimit,
+          plan: newPlan
+        },
+        requiresPayment: false
+      });
+    }
+
+    // For paid plan changes, create a new pending subscription
+    // The old subscription will be cancelled when payment is confirmed
+    const { data: newSubscription, error: createError } = await supabase
+      .from('subscriptions')
+      .insert([
+        {
+          user_id: userId,
+          plan_type: newPlanType,
+          status: 'pending',
+          checks_used: 0,
+          checks_limit: newPlan.checksLimit,
+          request_message: `Plan change from ${currentPlan.name} to ${newPlan.name}`,
+          requested_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        }
+      ])
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Database create error:', createError);
+      return res.status(500).json({ error: 'Failed to create plan change request' });
+    }
+
+    res.json({
+      message: 'Plan change initiated. Payment required to complete.',
+      subscription: newSubscription,
+      requiresPayment: true,
+      plan: {
+        name: newPlan.name,
+        price: newPlan.price,
+        priceDisplay: newPlan.priceDisplay,
+        duration: newPlan.duration,
+        features: newPlan.features
+      },
+      paymentInfo: {
+        amount: newPlan.price,
+        currency: 'INR',
+        planType: newPlanType,
+        isUpgrade: newPlan.price > currentPlan.price
+      }
+    });
+
+  } catch (error) {
+    console.error('Change plan error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Admin routes (these would typically be in a separate admin router with admin authentication)
 
 // Get all subscription requests (admin only)
@@ -218,7 +561,7 @@ router.get('/admin/requests', authenticateUser, async (req, res) => {
     res.json({ 
       requests: requests.map(req => ({
         ...req,
-        plan: PLANS[req.plan_type]
+        plan: PLANS[req.plan_type] || { name: 'Unknown Plan', price: 0 }
       }))
     });
 
@@ -233,7 +576,7 @@ router.post('/admin/approve/:id', authenticateUser, async (req, res) => {
   try {
     // TODO: Add admin role check
     const { id } = req.params;
-    const { duration_months = 1 } = req.body;
+    const { duration_months } = req.body;
 
     // Get the subscription request
     const { data: subscription, error: fetchError } = await supabase
@@ -247,22 +590,25 @@ router.post('/admin/approve/:id', authenticateUser, async (req, res) => {
       return res.status(404).json({ error: 'Subscription request not found' });
     }
 
-    // Calculate period dates
-    const now = new Date();
-    const periodEnd = new Date();
-    periodEnd.setMonth(periodEnd.getMonth() + duration_months);
+    // Calculate period dates using plan defaults or custom duration
+    const period = calculateSubscriptionPeriod(subscription.plan_type, duration_months);
+    if (!period) {
+      return res.status(400).json({ error: 'Invalid plan type' });
+    }
 
     // Approve the subscription
-    const { error: updateError } = await supabase
+    const { data: updatedSubscription, error: updateError } = await supabase
       .from('subscriptions')
       .update({
         status: 'active',
-        current_period_start: now.toISOString(),
-        current_period_end: periodEnd.toISOString(),
-        approved_at: now.toISOString(),
+        current_period_start: period.start,
+        current_period_end: period.end,
+        approved_at: new Date().toISOString(),
         approved_by: req.user.id
       })
-      .eq('id', id);
+      .eq('id', id)
+      .select()
+      .single();
 
     if (updateError) {
       console.error('Database update error:', updateError);
@@ -272,10 +618,8 @@ router.post('/admin/approve/:id', authenticateUser, async (req, res) => {
     res.json({
       message: 'Subscription approved successfully',
       subscription: {
-        ...subscription,
-        status: 'active',
-        current_period_start: now.toISOString(),
-        current_period_end: periodEnd.toISOString()
+        ...updatedSubscription,
+        plan: PLANS[subscription.plan_type]
       }
     });
 
