@@ -12,18 +12,13 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { formatDate, formatFileSize, cn } from "../lib/utils";
+import FileUploadModal from "../components/FileUpload/FileUploadModal";
 
 const Assignments = () => {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadForm, setUploadForm] = useState({
-    studentName: "",
-    courseName: "",
-    assignmentTitle: "",
-    file: null,
-  });
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -42,57 +37,17 @@ const Assignments = () => {
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      const allowedTypes = [
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/msword",
-        "text/plain",
-      ];
 
-      if (!allowedTypes.includes(file.type)) {
-        setError("Please select a PDF, DOCX, DOC, or TXT file");
-        return;
-      }
 
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        setError("File size must be less than 10MB");
-        return;
-      }
-
-      setUploadForm({ ...uploadForm, file });
-      setError("");
-    }
-  };
-
-  const handleUpload = async (e) => {
-    e.preventDefault();
+  const handleUpload = async (formData) => {
     setUploading(true);
     setError("");
 
     try {
-      const formData = new FormData();
-      formData.append("assignment", uploadForm.file);
-      formData.append("studentName", uploadForm.studentName);
-      formData.append("courseName", uploadForm.courseName);
-      formData.append("assignmentTitle", uploadForm.assignmentTitle);
-
       await assignmentsAPI.upload(formData);
 
-      // Reset form and close modal
-      setUploadForm({
-        studentName: "",
-        courseName: "",
-        assignmentTitle: "",
-        file: null,
-      });
+      // Close modal and reload assignments
       setShowUploadModal(false);
-
-      // Reload assignments
       loadAssignments();
     } catch (error) {
       console.error("Upload failed:", error);
@@ -277,108 +232,13 @@ const Assignments = () => {
       )}
 
       {/* Upload Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Upload Assignment
-              </h3>
-              <form onSubmit={handleUpload} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Student Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={uploadForm.studentName}
-                    onChange={(e) =>
-                      setUploadForm({
-                        ...uploadForm,
-                        studentName: e.target.value,
-                      })
-                    }
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    placeholder="Enter student name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Course Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={uploadForm.courseName}
-                    onChange={(e) =>
-                      setUploadForm({
-                        ...uploadForm,
-                        courseName: e.target.value,
-                      })
-                    }
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    placeholder="Enter course name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Assignment Title
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={uploadForm.assignmentTitle}
-                    onChange={(e) =>
-                      setUploadForm({
-                        ...uploadForm,
-                        assignmentTitle: e.target.value,
-                      })
-                    }
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    placeholder="Enter assignment title"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    File
-                  </label>
-                  <input
-                    type="file"
-                    required
-                    onChange={handleFileChange}
-                    accept=".pdf,.docx,.doc,.txt"
-                    className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    PDF, DOCX, DOC, or TXT files up to 10MB
-                  </p>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowUploadModal(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={uploading}
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md disabled:opacity-50"
-                  >
-                    {uploading ? "Uploading..." : "Upload"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      <FileUploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUpload={handleUpload}
+        uploading={uploading}
+        error={error}
+      />
     </div>
   );
 };
