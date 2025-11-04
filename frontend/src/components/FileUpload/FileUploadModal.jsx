@@ -142,36 +142,44 @@ const FileUploadModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-slideDown">
+      <div className="bg-white bg-opacity-95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white border-opacity-20 max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 hover:shadow-3xl">
         {/* Header */}
-        <div className="bg-gradient-primary p-6 rounded-t-2xl relative overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white bg-opacity-10 rounded-full -translate-y-16 translate-x-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white bg-opacity-5 rounded-full translate-y-12 -translate-x-12"></div>
+        <div className="relative p-6 rounded-t-2xl overflow-hidden">
+          {/* Animated gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#2D4B7C] via-[#3282B8] to-[#3AB795] opacity-90"></div>
+          
+          {/* Floating elements */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-white to-transparent opacity-10 rounded-full blur-2xl -translate-y-20 translate-x-20 animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-[#52DE97] to-transparent opacity-20 rounded-full blur-xl translate-y-16 -translate-x-16 animate-float"></div>
+          <div className="absolute top-1/2 right-1/4 w-6 h-6 bg-white opacity-30 rounded-full animate-ping"></div>
+          <div className="absolute top-1/4 right-1/2 w-4 h-4 bg-[#52DE97] opacity-40 rounded-full animate-bounce"></div>
           
           <div className="relative flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-white bg-opacity-20 rounded-xl backdrop-blur-sm">
-                <Cloud className="h-6 w-6 text-white" />
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="p-3 bg-white bg-opacity-20 rounded-2xl backdrop-blur-sm border border-white border-opacity-30 shadow-lg">
+                  <Cloud className="h-7 w-7 text-white drop-shadow-sm" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#52DE97] rounded-full animate-pulse"></div>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Upload Assignment</h2>
-                <p className="text-white text-opacity-90 text-sm">
+                <h2 className="text-2xl font-bold text-white drop-shadow-sm">Upload Assignment</h2>
+                <p className="text-white text-opacity-90 text-sm font-medium">
                   Upload your document for plagiarism analysis
                 </p>
               </div>
             </div>
             <button
               onClick={handleClose}
-              className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-all duration-200 hover:scale-105"
+              className="group p-3 hover:bg-white hover:bg-opacity-20 rounded-xl transition-all duration-300 hover:scale-110 hover:rotate-90 backdrop-blur-sm border border-white border-opacity-20"
             >
-              <X className="h-5 w-5 text-white" />
+              <X className="h-5 w-5 text-white group-hover:text-white transition-colors" />
             </button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 bg-gradient-to-b from-white to-gray-50">
           {/* Cloud Integration */}
           <CloudIntegration 
             onCloudSelect={(provider) => console.log('Cloud provider selected:', provider)}
@@ -341,18 +349,18 @@ const FileUploadModal = ({
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200 bg-gray-50 bg-opacity-50 -mx-6 px-6 pb-6 rounded-b-2xl">
             <button
               type="button"
               onClick={handleClose}
-              className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="px-6 py-3 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-200 hover:shadow-md"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={uploading || !selectedFile || !formData.studentName || !formData.courseName || !formData.assignmentTitle}
-              className="px-6 py-3 text-sm font-medium text-white bg-gradient-secondary hover:opacity-90 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-6 py-3 text-sm font-medium text-white bg-gradient-secondary hover:opacity-90 hover:scale-105 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center space-x-2 shadow-lg hover:shadow-xl"
             >
               {uploading ? (
                 <>
