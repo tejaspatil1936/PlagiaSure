@@ -112,7 +112,7 @@ const Assignments = () => {
   }
 
   return (
-    <div className="space-y-8 bg-gradient-to-br from-gray-50 via-white to-blue-50 min-h-screen p-6">
+    <div className="space-y-8 min-h-screen">
       {/* Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#3AB795] via-[#52DE97] to-[#3282B8] rounded-2xl p-8 shadow-2xl">
         {/* Animated background elements */}

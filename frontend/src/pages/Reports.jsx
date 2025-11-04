@@ -550,7 +550,7 @@ const Reports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50 py-8">
+    <div className="min-h-screen py-8">
       {/* Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
         <div className="relative overflow-hidden bg-gradient-to-r from-[#2D4B7C] via-[#3282B8] to-[#52DE97] rounded-2xl p-8 shadow-2xl">

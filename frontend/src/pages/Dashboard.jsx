@@ -86,7 +86,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-8 bg-gradient-to-br from-gray-50 via-white to-blue-50 min-h-screen p-6">
+    <div className="space-y-8 min-h-screen">
       {/* Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#2D4B7C] via-[#3282B8] to-[#3AB795] rounded-2xl p-8 shadow-2xl">
         {/* Animated background elements */}
