@@ -81,9 +81,15 @@
     - Maintain backward compatibility with existing subscriptions
     - _Requirements: 1.1, 5.1, 5.2_
 
-- [ ] 5. Implement usage restriction middleware
+- [x] 5. Implement usage restriction middleware
 
-  - [ ] 5.1 Create usage checking middleware
+
+
+
+
+  - [x] 5.1 Create usage checking middleware
+
+
 
     - Implement checkUsageLimit middleware function
     - Check free user lifetime limits (2 scans max)
@@ -91,14 +97,18 @@
     - Return appropriate error messages for limit exceeded
     - _Requirements: 1.4, 4.3_
 
-  - [ ] 5.2 Apply usage restrictions to assignment routes
+  - [x] 5.2 Apply usage restrictions to assignment routes
+
+
 
     - Add checkUsageLimit middleware to assignment creation routes
     - Update assignment routes to increment usage counters
     - Implement usage tracking for successful scans
     - _Requirements: 1.4, 4.3_
 
-  - [ ] 5.3 Create usage tracking service
+  - [x] 5.3 Create usage tracking service
+
+
     - Implement getUserSubscription() helper function
     - Add getTotalUsageCount() for lifetime usage tracking
     - Create getMonthlyUsageCount() for monthly limit checking

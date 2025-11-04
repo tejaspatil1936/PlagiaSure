@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { supabase, supabaseAdmin } from '../server.js';
 import { extractTextFromFile } from '../utils/textExtractor.js';
-import { authenticateUser } from '../middleware/auth.js';
+import { authenticateUser, checkUsageLimit } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -28,8 +28,8 @@ const upload = multer({
   }
 });
 
-// Upload assignment endpoint
-router.post('/upload', authenticateUser, upload.single('assignment'), async (req, res) => {
+// Upload assignment endpoint with usage restrictions
+router.post('/upload', authenticateUser, checkUsageLimit, upload.single('assignment'), async (req, res) => {
   try {
     const { studentName, courseName, assignmentTitle } = req.body;
     const file = req.file;
@@ -145,7 +145,13 @@ router.post('/upload', authenticateUser, upload.single('assignment'), async (req
 
     res.status(201).json({
       message: 'Assignment uploaded successfully',
-      assignment: assignmentData
+      assignment: assignmentData,
+      usageInfo: req.usageLimitCheck ? {
+        currentUsage: req.usageLimitCheck.currentUsage,
+        limit: req.usageLimitCheck.limit,
+        limitType: req.usageLimitCheck.limitType,
+        message: req.usageLimitCheck.message
+      } : null
     });
 
   } catch (error) {

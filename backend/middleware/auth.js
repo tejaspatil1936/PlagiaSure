@@ -1,4 +1,5 @@
 import { supabase } from '../server.js';
+import { checkUsageLimits, incrementUsageCount } from '../services/usageService.js';
 
 export const authenticateUser = async (req, res, next) => {
   try {
@@ -110,6 +111,69 @@ export const checkAdminRole = async (req, res, next) => {
   } catch (error) {
     console.error('Admin check error:', error);
     res.status(500).json({ error: 'Admin verification failed' });
+  }
+};
+
+/**
+ * Middleware to check if user has exceeded their usage limits
+ * This should be applied to routes that consume user's scan quota
+ */
+export const checkUsageLimit = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // Check usage limits
+    const limitCheck = await checkUsageLimits(userId);
+
+    if (limitCheck.limitExceeded) {
+      return res.status(403).json({
+        error: 'Usage limit exceeded',
+        message: limitCheck.message,
+        limitType: limitCheck.limitType,
+        currentUsage: limitCheck.currentUsage,
+        limit: limitCheck.limit,
+        upgradeRequired: limitCheck.limitType === 'lifetime' || 
+                        (limitCheck.planType && limitCheck.planType.includes('basic'))
+      });
+    }
+
+    // Store limit check result in request for later use
+    req.usageLimitCheck = limitCheck;
+    next();
+
+  } catch (error) {
+    console.error('Usage limit check error:', error);
+    res.status(500).json({ 
+      error: 'Failed to check usage limits',
+      message: 'Unable to verify your usage limits. Please try again.'
+    });
+  }
+};
+
+/**
+ * Middleware to increment usage count after successful scan
+ * This should be called after a successful plagiarism/AI check
+ */
+export const incrementUsageAfterScan = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // Increment usage count
+    const updatedUsage = await incrementUsageCount(userId);
+
+    if (!updatedUsage) {
+      console.error('Failed to increment usage count for user:', userId);
+      // Don't fail the request, just log the error
+    }
+
+    // Store updated usage in request for response
+    req.updatedUsage = updatedUsage;
+    next();
+
+  } catch (error) {
+    console.error('Usage increment error:', error);
+    // Don't fail the request, just log the error
+    next();
   }
 };
 

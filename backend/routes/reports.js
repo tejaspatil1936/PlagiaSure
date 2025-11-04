@@ -1,13 +1,14 @@
 import express from 'express';
 import { supabase, supabaseAdmin } from '../server.js';
-import { authenticateUser, checkSubscription, incrementUsage } from '../middleware/auth.js';
+import { authenticateUser, checkSubscription, incrementUsage, checkUsageLimit, incrementUsageAfterScan } from '../middleware/auth.js';
 import { detectAIContent } from '../services/aiDetection.js';
 import { detectPlagiarism } from '../services/plagiarismDetection.js';
+import { incrementUsageCount } from '../services/usageService.js';
 
 const router = express.Router();
 
-// Generate report endpoint (temporarily disabled subscription check)
-router.post('/generate', authenticateUser, async (req, res) => {
+// Generate report endpoint with usage restrictions
+router.post('/generate', authenticateUser, checkUsageLimit, async (req, res) => {
   try {
     const { assignmentId, recheck = false } = req.body;
     const userId = req.user.id;
@@ -103,11 +104,8 @@ router.post('/generate', authenticateUser, async (req, res) => {
       reportId = newReport.id;
     }
 
-    // Increment usage count
-    await incrementUsage(userId);
-
     // Process analysis asynchronously
-    processAnalysis(reportId, assignment.extracted_text);
+    processAnalysis(reportId, assignment.extracted_text, userId);
 
     const responseMessage = recheck ? 'Report recheck started' : 'Report generation started';
     console.log(`✅ ${responseMessage} for assignment ${assignmentId}, report ID: ${reportId}`);
@@ -116,7 +114,12 @@ router.post('/generate', authenticateUser, async (req, res) => {
       message: responseMessage,
       reportId: reportId,
       status: 'processing',
-      isRecheck: recheck
+      isRecheck: recheck,
+      usageInfo: req.usageLimitCheck ? {
+        currentUsage: req.usageLimitCheck.currentUsage + 1, // Will be incremented after successful scan
+        limit: req.usageLimitCheck.limit,
+        limitType: req.usageLimitCheck.limitType
+      } : null
     });
 
   } catch (error) {
@@ -203,7 +206,7 @@ router.get('/', authenticateUser, async (req, res) => {
 });
 
 // Async function to process AI and plagiarism analysis
-async function processAnalysis(reportId, text) {
+async function processAnalysis(reportId, text, userId) {
   try {
     console.log(`Starting analysis for report ${reportId}`);
 
@@ -319,6 +322,16 @@ async function processAnalysis(reportId, text) {
         .eq('id', reportId);
     } else {
       console.log(`Analysis completed for report ${reportId}`);
+      
+      // Increment usage count after successful analysis
+      if (userId) {
+        const updatedUsage = await incrementUsageCount(userId);
+        if (updatedUsage) {
+          console.log(`Usage incremented for user ${userId}: ${updatedUsage.monthly_usage_count} monthly, ${updatedUsage.lifetime_usage_count} lifetime`);
+        } else {
+          console.error(`Failed to increment usage count for user ${userId}`);
+        }
+      }
     }
 
   } catch (error) {
