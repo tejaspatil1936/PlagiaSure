@@ -68,7 +68,7 @@ const About = () => {
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
               About PlagiaSure
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-4xl mx-auto">
+            <p className="text-xl md:text-2xl text-white text-opacity-90 mb-8 max-w-4xl mx-auto">
               Empowering educators worldwide with cutting-edge AI technology to maintain academic integrity and foster genuine learning.
             </p>
           </div>
@@ -101,11 +101,11 @@ const About = () => {
             <div className="relative">
               <div className="bg-gradient-to-br from-[#3282B8] to-[#52DE97] rounded-2xl p-8 text-white">
                 <h3 className="text-2xl font-bold mb-4">Why We Started PlagiaSure</h3>
-                <p className="text-blue-100 mb-6">
+                <p className="text-white text-opacity-90 mb-6">
                   As educators ourselves, we witnessed the growing challenge of AI-generated content and sophisticated plagiarism techniques. 
                   Traditional tools weren't keeping up with the evolving landscape.
                 </p>
-                <p className="text-blue-100">
+                <p className="text-white text-opacity-90">
                   We founded PlagiaSure to bridge this gap, creating a solution that's not just powerful, 
                   but also intuitive and accessible for educators at all levels.
                 </p>
@@ -252,7 +252,7 @@ const About = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Transform Your Institution?
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
+          <p className="text-xl text-white text-opacity-90 mb-8">
             Join the growing community of educators who trust PlagiaSure to maintain academic integrity.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

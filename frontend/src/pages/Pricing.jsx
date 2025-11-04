@@ -81,18 +81,18 @@ const Pricing = () => {
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-white text-opacity-90 mb-8 max-w-3xl mx-auto">
             Choose the perfect plan for your needs. Start free, upgrade anytime.
           </p>
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center space-x-4 mb-8">
-            <span className={`text-lg ${billingCycle === 'monthly' ? 'text-white font-semibold' : 'text-blue-200'}`}>
+            <span className={`text-lg ${billingCycle === 'monthly' ? 'text-white font-bold' : 'text-white text-opacity-70'}`}>
               Monthly
             </span>
             <button
               onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-              className="relative inline-flex h-8 w-16 items-center rounded-full bg-white bg-opacity-20 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
+              className="relative inline-flex h-8 w-16 items-center rounded-full bg-white bg-opacity-30 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
             >
               <span
                 className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
@@ -100,7 +100,7 @@ const Pricing = () => {
                 }`}
               />
             </button>
-            <span className={`text-lg ${billingCycle === 'yearly' ? 'text-white font-semibold' : 'text-blue-200'}`}>
+            <span className={`text-lg ${billingCycle === 'yearly' ? 'text-white font-bold' : 'text-white text-opacity-70'}`}>
               Yearly
             </span>
             {billingCycle === 'yearly' && (
@@ -289,7 +289,7 @@ const Pricing = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Get Started?
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
+          <p className="text-xl text-white text-opacity-90 mb-8">
             Join thousands of educators protecting academic integrity with PlagiaSure.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
