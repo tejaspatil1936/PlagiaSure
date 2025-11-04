@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 // Force rebuild to fix Upload import issue
 import { useAuth } from "../contexts/AuthContext";
-import { billingAPI, assignmentsAPI, reportsAPI } from "../services/api";
+import {
+  billingAPI,
+  assignmentsAPI,
+  reportsAPI,
+  paymentAPI,
+} from "../services/api";
 import {
   FileText,
   BarChart3,
@@ -12,6 +17,8 @@ import {
   Upload,
   TrendingUp,
   Users,
+  Download,
+  CreditCard,
 } from "lucide-react";
 import { formatDate, getScoreColor, cn } from "../lib/utils";
 import BrandedLoading from "../components/BrandedLoading";
@@ -271,6 +278,9 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* Payment History Section */}
+      <PaymentHistorySection />
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
@@ -427,6 +437,119 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const PaymentHistorySection = () => {
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadPaymentHistory();
+  }, []);
+
+  const loadPaymentHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await billingAPI.getPaymentHistory({ limit: 5 });
+      setPayments(response.data.payments);
+    } catch (error) {
+      console.error("Failed to load payment history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadInvoice = async (paymentId) => {
+    try {
+      const response = await paymentAPI.downloadInvoice(paymentId);
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice-${paymentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download invoice:", error);
+    }
+  };
+
+  if (payments.length === 0 && !loading) {
+    return null;
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+      <div className="bg-gradient-to-r from-[#2D4B7C] to-[#3282B8] px-6 py-4">
+        <div className="flex items-center">
+          <CreditCard className="h-6 w-6 text-white mr-3" />
+          <h3 className="text-lg font-bold text-white">Payment History</h3>
+        </div>
+      </div>
+
+      <div className="p-6">
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3282B8]"></div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {payments.map((payment) => (
+              <div
+                key={payment.id}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {payment.planName}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(payment.createdAt).toLocaleDateString()} •{" "}
+                        {payment.paymentMethod}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="text-right">
+                    <p className="font-bold text-[#52DE97]">
+                      ₹{(payment.amount / 100).toFixed(0)}
+                    </p>
+                    <p className="text-xs text-gray-500 uppercase">
+                      {payment.status}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDownloadInvoice(payment.paymentId)}
+                    className="p-2 text-[#3282B8] hover:bg-[#3282B8] hover:text-white rounded-lg transition-colors"
+                    title="Download Invoice"
+                  >
+                    <Download className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {payments.length > 0 && (
+          <div className="mt-4 text-center">
+            <Link
+              to="/billing"
+              className="text-sm font-medium text-[#3282B8] hover:text-[#2D4B7C]"
+            >
+              View all payments →
+            </Link>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

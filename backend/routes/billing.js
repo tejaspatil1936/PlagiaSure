@@ -459,6 +459,60 @@ router.post('/cancel-subscription', authenticateUser, async (req, res) => {
   }
 });
 
+// Get payment history for user
+router.get('/payment-history', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 10 } = req.query;
+
+    // Get payment history from database
+    const { data: payments, error } = await supabase
+      .from('payments')
+      .select(`
+        *,
+        subscriptions (
+          plan_type
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .range((page - 1) * limit, page * limit - 1);
+
+    if (error) {
+      console.error('Payment history fetch error:', error);
+      return res.status(500).json({ error: 'Failed to fetch payment history' });
+    }
+
+    // Format payment data
+    const formattedPayments = payments.map(payment => ({
+      id: payment.id,
+      paymentId: payment.razorpay_payment_id,
+      orderId: payment.razorpay_order_id,
+      amount: payment.amount,
+      currency: payment.currency,
+      planType: payment.subscriptions?.plan_type,
+      planName: PLANS[payment.subscriptions?.plan_type]?.name || 'Unknown Plan',
+      status: payment.status,
+      createdAt: payment.created_at,
+      paymentMethod: payment.payment_method || 'Razorpay'
+    }));
+
+    res.json({
+      payments: formattedPayments,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        hasMore: payments.length === parseInt(limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Get payment history error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Change subscription plan (upgrade/downgrade)
 router.post('/change-plan', authenticateUser, async (req, res) => {
   try {

@@ -9,6 +9,7 @@ import {
   getRazorpayKeyId,
   getPaymentUrls
 } from '../services/razorpayService.js';
+import { generateInvoicePDF } from '../services/invoiceService.js';
 
 const router = express.Router();
 
@@ -1026,5 +1027,327 @@ router.get('/status/:orderId', authenticateUser, asyncHandler(async (req, res) =
     });
   }
 }));
+
+// Download PDF invoice for a payment
+router.get('/invoice/:paymentId/pdf', authenticateUser, async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const userId = req.user.id;
+
+    // Get payment details from database
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .select(`
+        *,
+        subscriptions (
+          plan_type,
+          user_id
+        )
+      `)
+      .eq('razorpay_payment_id', paymentId)
+      .eq('user_id', userId)
+      .single();
+
+    if (paymentError || !payment) {
+      return res.status(404).json({
+        error: 'Payment not found',
+        code: 'PAYMENT_NOT_FOUND'
+      });
+    }
+
+    // Get user details
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('email, school_name')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+
+    // Generate PDF invoice
+    const pdfBuffer = await generateInvoicePDF(payment, user);
+
+    // Set response headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="invoice-${paymentId}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    // Send PDF
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('Generate PDF invoice error:', error);
+    res.status(500).json({
+      error: 'Failed to generate PDF invoice',
+      code: 'PDF_GENERATION_ERROR'
+    });
+  }
+});
+
+// Get invoice for a payment (HTML version)
+router.get('/invoice/:paymentId', authenticateUser, async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const userId = req.user.id;
+
+    // Get payment details from database
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .select(`
+        *,
+        subscriptions (
+          plan_type,
+          user_id
+        )
+      `)
+      .eq('razorpay_payment_id', paymentId)
+      .eq('user_id', userId)
+      .single();
+
+    if (paymentError || !payment) {
+      return res.status(404).json({
+        error: 'Payment not found',
+        code: 'PAYMENT_NOT_FOUND'
+      });
+    }
+
+    try {
+      // Try to get Razorpay invoice/receipt
+      const razorpayPayment = await getPaymentDetails(paymentId);
+      
+      if (razorpayPayment && razorpayPayment.invoice_id) {
+        // If Razorpay has an invoice, redirect to it
+        return res.redirect(razorpayPayment.invoice_url || `https://dashboard.razorpay.com/app/invoices/${razorpayPayment.invoice_id}`);
+      }
+    } catch (razorpayError) {
+      console.log('Razorpay invoice not available, generating custom invoice');
+    }
+
+    // Generate custom invoice HTML
+    const planNames = {
+      'basic_monthly': 'Basic Plan (Monthly)',
+      'basic_yearly': 'Basic Plan (Yearly)', 
+      'pro_monthly': 'Pro Plan (Monthly)',
+      'pro_yearly': 'Pro Plan (Yearly)'
+    };
+
+    const invoiceHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice - PlagiaSure</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 40px 20px; 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .invoice-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header { 
+            background: linear-gradient(135deg, #2D4B7C 0%, #3282B8 50%, #3AB795 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        .logo { 
+            font-size: 32px; 
+            font-weight: bold; 
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        .invoice-title { 
+            font-size: 24px; 
+            margin: 10px 0;
+            position: relative;
+            z-index: 1;
+        }
+        .content { 
+            padding: 40px; 
+        }
+        .invoice-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        .company-info, .invoice-details {
+            background: #f8f9fa;
+            padding: 24px;
+            border-radius: 12px;
+            border-left: 4px solid #3282B8;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2D4B7C;
+            margin-bottom: 16px;
+        }
+        .details-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 30px 0;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .details-table th { 
+            background: linear-gradient(135deg, #3282B8, #3AB795);
+            color: white; 
+            padding: 16px; 
+            text-align: left;
+            font-weight: 600;
+        }
+        .details-table td { 
+            padding: 16px; 
+            border-bottom: 1px solid #e9ecef;
+        }
+        .details-table tr:last-child td {
+            border-bottom: none;
+        }
+        .details-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .amount { 
+            font-size: 24px; 
+            font-weight: bold; 
+            color: #52DE97;
+        }
+        .status { 
+            display: inline-block;
+            padding: 8px 16px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .footer { 
+            text-align: center; 
+            margin-top: 40px; 
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            color: #666;
+        }
+        .footer h3 {
+            color: #2D4B7C;
+            margin-bottom: 16px;
+        }
+        @media print {
+            body { background: white; }
+            .invoice-container { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <div class="header">
+            <div class="logo">🔍 PlagiaSure</div>
+            <div class="invoice-title">Payment Invoice</div>
+            <p style="margin: 0; opacity: 0.9;">Advanced AI & Plagiarism Detection Platform</p>
+        </div>
+        
+        <div class="content">
+            <div class="invoice-info">
+                <div class="company-info">
+                    <div class="section-title">From</div>
+                    <p><strong>PlagiaSure</strong></p>
+                    <p>AI Detection Suite</p>
+                    <p>Advanced Plagiarism Detection</p>
+                    <p>Email: support@plagiasure.com</p>
+                </div>
+                
+                <div class="invoice-details">
+                    <div class="section-title">Invoice Details</div>
+                    <p><strong>Invoice Date:</strong> ${new Date(payment.created_at).toLocaleDateString()}</p>
+                    <p><strong>Payment ID:</strong> ${payment.razorpay_payment_id}</p>
+                    <p><strong>Order ID:</strong> ${payment.razorpay_order_id}</p>
+                    <p><strong>Status:</strong> <span class="status">Paid</span></p>
+                </div>
+            </div>
+            
+            <table class="details-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Plan Type</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <strong>${planNames[payment.subscriptions?.plan_type] || 'Subscription Plan'}</strong>
+                            <br>
+                            <small style="color: #666;">Premium AI & Plagiarism Detection Service</small>
+                        </td>
+                        <td>${payment.subscriptions?.plan_type || 'N/A'}</td>
+                        <td class="amount">₹${(payment.amount / 100).toFixed(0)}</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="text-align: right; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                <p style="margin: 0; font-size: 18px;"><strong>Total Amount: <span class="amount">₹${(payment.amount / 100).toFixed(0)}</span></strong></p>
+                <p style="margin: 8px 0 0 0; color: #666; font-size: 14px;">Amount paid via ${payment.payment_method || 'Razorpay'}</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <h3>Thank you for choosing PlagiaSure!</h3>
+            <p>This invoice was generated automatically. For any queries, please contact our support team.</p>
+            <p style="margin-top: 20px; font-size: 12px; color: #999;">
+                Generated on ${new Date().toLocaleString()} | PlagiaSure - Advanced AI Detection Platform
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Disposition', `attachment; filename="invoice-${paymentId}.html"`);
+    res.send(invoiceHTML);
+
+  } catch (error) {
+    console.error('Get invoice error:', error);
+    res.status(500).json({
+      error: 'Failed to generate invoice',
+      code: 'INVOICE_ERROR'
+    });
+  }
+});
 
 export default router;

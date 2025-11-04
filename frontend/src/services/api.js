@@ -65,6 +65,7 @@ export const billingAPI = {
   requestSubscription: (data) => api.post('/api/billing/request-subscription', data),
   getStatus: () => api.get('/api/billing/status'),
   cancelRequest: () => api.post('/api/billing/cancel-request'),
+  getPaymentHistory: (params) => api.get('/api/billing/payment-history', { params }),
   
   // Admin routes
   admin: {
@@ -80,6 +81,9 @@ export const paymentAPI = {
   createOrder: (data) => api.post('/api/payments/create-order', data),
   verifyPayment: (data) => api.post('/api/payments/verify-payment', data),
   getStatus: (orderId) => api.get(`/api/payments/status/${orderId}`),
+  downloadInvoice: (paymentId) => api.get(`/api/payments/invoice/${paymentId}/pdf`, { 
+    responseType: 'blob' 
+  }),
 };
 
 // Utility functions
