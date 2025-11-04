@@ -73,7 +73,7 @@ PAYMENT RECEIPT
 Order ID: ${receiptData.orderId}
 Payment ID: ${receiptData.paymentId}
 Plan: ${receiptData.planType}
-Amount: ₹${receiptData.amount}
+Amount: ₹${(receiptData.amount / 100).toFixed(0)}
 Currency: ${receiptData.currency}
 Date: ${new Date(receiptData.timestamp).toLocaleString()}
 Status: ${receiptData.status}
@@ -138,7 +138,7 @@ PlagiaSure Team
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Amount:</span>
-                <span className="font-medium">₹{paymentDetails.amount}</span>
+                <span className="font-medium">₹{(paymentDetails.amount / 100).toFixed(0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Payment ID:</span>

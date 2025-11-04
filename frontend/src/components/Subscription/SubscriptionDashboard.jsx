@@ -329,7 +329,7 @@ const SubscriptionDashboard = ({ onUpgrade, onManagePayment }) => {
                       <p className="text-sm text-gray-500">{formatDate(payment.date)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium text-gray-900">₹{payment.amount}</p>
+                      <p className="font-medium text-gray-900">₹{(payment.amount / 100).toFixed(0)}</p>
                       <p className={cn(
                         "text-sm",
                         payment.status === 'paid' ? 'text-green-600' : 'text-red-600'

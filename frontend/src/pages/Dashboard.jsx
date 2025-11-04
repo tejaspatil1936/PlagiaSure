@@ -120,23 +120,51 @@ const Dashboard = () => {
                   <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
                   <span>System Online</span>
                 </div>
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
-                  <span>Premium Features Active</span>
-                </div>
+                {subscription?.isActive && (
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                    <span>Premium Features Active</span>
+                  </div>
+                )}
+                {!subscription?.isActive && (
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></div>
+                    <span>Free Plan Active</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-          <div className="hidden md:block">
-            <div className="text-right text-white text-opacity-90">
-              <p className="text-sm font-medium">Today's Date</p>
-              <p className="text-lg font-bold">{new Date().toLocaleDateString()}</p>
-            </div>
-          </div>
+
         </div>
       </div>
 
       {/* Subscription Status */}
+      {!subscription && (
+        <div className="rounded-2xl p-6 shadow-lg border backdrop-blur-sm relative overflow-hidden bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white to-transparent opacity-30 rounded-full blur-2xl -translate-y-16 translate-x-16"></div>
+          
+          <div className="flex items-center relative z-10">
+            <div className="p-3 rounded-xl shadow-md bg-blue-500">
+              <AlertTriangle className="h-6 w-6 text-white" />
+            </div>
+            <div className="ml-4 flex-1">
+              <p className="text-lg font-bold text-gray-900">Free Plan Active</p>
+              <p className="text-sm text-gray-600 mt-1">
+                You have 2 free checks remaining. Upgrade to premium for unlimited access.
+              </p>
+              <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-blue-400 to-indigo-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: '0%' }} // This should be calculated based on actual usage
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {subscription && (
         <div className={cn(
           "rounded-2xl p-6 shadow-lg border backdrop-blur-sm relative overflow-hidden",
